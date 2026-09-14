@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Stempel">
+<meta name="theme-color" content="#E9EBEE">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>Stempel</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="feiertage.js"></script>
+<script src="config.js"></script>
+<script src="gsync.js" defer></script>
+<style>
+:root{
+  --grund:#E9EBEE;
+  --karte:#FFFFFF;
+  --tinte:#17212C;
+  --gedaempft:#6E7B88;
+  --linie:#D6DBE0;
+  --linie-zart:#E8EBEE;
+  --lauf:#1B6B52;
+  --lauf-hell:#D8E9E2;
+  --warn:#9E3B2C;
+  --warn-hell:#F5E2DE;
+  --serif:ui-serif,"New York",Georgia,"Times New Roman",serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  --unten:calc(env(safe-area-inset-bottom,0px) + 12px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--grund);
+  color:var(--tinte);
+  font-family:var(--sans);
+  font-size:16px;
+  line-height:1.45;
+  padding-bottom:calc(var(--unten) + 104px);
+  -webkit-font-smoothing:antialiased;
+}
+button{font-family:inherit;font-size:inherit;color:inherit;background:none;border:none;padding:0;cursor:pointer}
+.zahl{font-family:var(--serif);font-variant-numeric:tabular-nums;letter-spacing:-0.01em}
+
+/* Kopfzeile mit Monatsnavigation */
+.kopf{
+  display:flex;align-items:baseline;gap:10px;
+  padding:calc(env(safe-area-inset-top,0px) + 18px) 20px 12px;
+}
+.monat{font-family:var(--serif);font-size:25px;font-weight:600;letter-spacing:-0.015em;flex:1}
+.pfeil{
+  width:34px;height:34px;border-radius:17px;background:var(--karte);
+  display:grid;place-items:center;font-size:17px;color:var(--gedaempft);
+  border:1px solid var(--linie);align-self:center;flex:none;
+}
+.pfeil:active{background:var(--linie-zart)}
+.zahnrad{width:34px;height:34px;display:grid;place-items:center;color:var(--gedaempft);align-self:center;flex:none}
+
+/* Summenband */
+.summen{
+  display:flex;gap:28px;padding:0 20px 16px;
+}
+.summe-wert{font-family:var(--serif);font-size:27px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1}
+.summe-label{font-size:12.5px;color:var(--gedaempft);margin-top:1px}
+.plus{color:var(--lauf)}
+.minus{color:var(--warn)}
+
+/* Laufender Tag */
+.laeuft{
+  margin:0 14px 16px;padding:16px 18px;border-radius:14px;
+  background:var(--tinte);color:#F2F5F7;
+}
+.laeuft-kopf{display:flex;align-items:center;gap:8px;font-size:13.5px;color:#A7B6C4}
+.puls{width:7px;height:7px;border-radius:4px;background:#5FD1A8;flex:none}
+@media (prefers-reduced-motion:no-preference){
+  .puls{animation:atmen 2.6s ease-in-out infinite}
+}
+@keyframes atmen{0%,100%{opacity:1}50%{opacity:.35}}
+.laeuft-zeit{font-family:var(--serif);font-size:46px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.05;margin:6px 0 2px}
+.laeuft-fuss{font-size:13.5px;color:#A7B6C4;font-variant-numeric:tabular-nums}
+
+/* Jobwahl */
+.jobs{display:flex;gap:7px;padding:0 16px 14px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.jobs::-webkit-scrollbar{display:none}
+.chip{
+  flex:none;display:flex;align-items:center;gap:6px;
+  padding:6px 13px;border-radius:18px;font-size:14px;
+  background:var(--karte);border:1px solid var(--linie);color:var(--gedaempft);
+}
+.chip.an{background:var(--tinte);border-color:var(--tinte);color:#fff;font-weight:600}
+.chip-punkt{width:6px;height:6px;border-radius:3px;background:var(--lauf);flex:none}
+.chip.an .chip-punkt{background:#5FD1A8}
+
+/* Feiertag */
+.feiertag-band{
+  background:var(--karte);border:1px solid var(--linie);border-radius:11px;
+  padding:9px 14px;font-size:13.5px;color:var(--tinte);margin-bottom:10px;
+  display:flex;gap:8px;align-items:baseline;
+}
+.feiertag-band b{font-weight:600}
+.feiertag-band span{color:var(--gedaempft)}
+.frei{font-size:14px;color:var(--gedaempft)}
+.zeile.freizeile{background:var(--linie-zart)}
+.zeile.freizeile .netto{font-size:13px;color:var(--gedaempft);font-family:var(--sans);font-weight:400}
+
+/* Ueberstundenkonto */
+.konto{background:var(--karte);border-radius:14px;margin:0 14px 16px;padding:14px 18px 16px}
+.konto-kopf{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13px;color:var(--gedaempft)}
+.sync-knopf{font-size:12.5px;color:var(--gedaempft);border:1px solid var(--linie);border-radius:20px;padding:3px 10px;flex:none}
+.sync-knopf.frisch{color:var(--lauf);border-color:var(--lauf-hell);background:var(--lauf-hell)}
+.sync-knopf:active{background:var(--linie-zart)}
+.konto-wert{font-family:var(--serif);font-size:38px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1;margin:3px 0 13px}
+.konto-spur{position:relative;height:11px;background:var(--linie-zart);border-radius:6px}
+.konto-fuell{position:absolute;left:0;top:0;bottom:0;background:var(--tinte);border-radius:6px}
+.konto-ueber{position:absolute;top:0;bottom:0;background:var(--lauf);border-radius:0 6px 6px 0}
+.konto-grenze{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--gedaempft);opacity:.5;border-radius:1px}
+.konto-fuss{margin-top:10px;font-size:13.5px;color:var(--gedaempft);line-height:1.45}
+.konto-fuss b{color:var(--tinte);font-weight:600}
+.konto-fuss.zahlbar b{color:var(--lauf)}
+
+/* Stempelkarte */
+.karte{background:var(--karte);border-radius:14px;margin:0 14px;overflow:hidden}
+.zeile{
+  display:grid;grid-template-columns:52px 1fr 62px;align-items:center;
+  gap:12px;padding:11px 16px;width:100%;text-align:left;
+  border-bottom:1px solid var(--linie-zart);
+}
+.zeile:last-child{border-bottom:none}
+.zeile:active{background:var(--linie-zart)}
+.tag{font-size:13px;color:var(--gedaempft);font-variant-numeric:tabular-nums;line-height:1.25}
+.tag b{display:block;font-family:var(--serif);font-size:18px;font-weight:600;color:var(--tinte)}
+.tag.leer{visibility:hidden}
+.wochenende .tag b{color:var(--gedaempft)}
+
+/* Der Spannbalken: zeigt, wann am Tag gearbeitet wurde */
+.spur{position:relative;height:9px;background:var(--linie-zart);border-radius:5px}
+.balken{position:absolute;top:0;bottom:0;background:var(--tinte);border-radius:5px;min-width:4px}
+.balken.offen{background:var(--lauf)}
+.marke{position:absolute;top:-3px;bottom:-3px;width:1px;background:var(--linie)}
+.netto{font-family:var(--serif);font-size:17px;font-weight:600;font-variant-numeric:tabular-nums;text-align:right}
+.hinweis-punkt{display:inline-block;width:5px;height:5px;border-radius:3px;background:var(--warn);vertical-align:2px;margin-left:5px}
+
+.skala{display:flex;justify-content:space-between;padding:8px 16px 10px;font-size:11px;color:var(--gedaempft);font-variant-numeric:tabular-nums}
+.leerbild{padding:34px 22px 38px;text-align:center;color:var(--gedaempft);font-size:14.5px;line-height:1.5}
+
+/* Aktionsleiste unten */
+.leiste{
+  position:fixed;left:0;right:0;bottom:0;
+  padding:12px 14px var(--unten);
+  background:linear-gradient(to top,var(--grund) 74%,rgba(233,235,238,0));
+}
+.leiste-knoepfe{display:flex;gap:10px;align-items:stretch}
+.stempel{
+  flex:1;height:58px;border-radius:14px;background:var(--tinte);color:#fff;
+  font-size:17px;font-weight:600;letter-spacing:.01em;
+  display:grid;place-items:center;
+}
+.stempel.aktiv{background:var(--lauf)}
+.stempel:active{opacity:.82}
+.nachtrag{
+  width:58px;height:58px;border-radius:14px;background:var(--karte);
+  border:1px solid var(--linie);display:grid;place-items:center;font-size:26px;color:var(--tinte);
+}
+.nachtrag:active{background:var(--linie-zart)}
+
+/* Eingabeblatt */
+.blende{position:fixed;inset:0;background:rgba(23,33,44,.34);opacity:0;pointer-events:none;transition:opacity .2s}
+.blende.auf{opacity:1;pointer-events:auto}
+.blatt{
+  position:fixed;left:0;right:0;bottom:0;z-index:2;
+  background:var(--grund);border-radius:18px 18px 0 0;
+  padding:8px 18px calc(env(safe-area-inset-bottom,0px) + 20px);
+  transform:translateY(102%);transition:transform .26s cubic-bezier(.32,.72,0,1);
+  max-height:92vh;overflow-y:auto;
+}
+.blatt.auf{transform:translateY(0)}
+.griff{width:36px;height:4px;border-radius:2px;background:var(--linie);margin:6px auto 14px}
+.blatt h2{font-family:var(--serif);font-size:21px;font-weight:600;margin:0 0 14px}
+.feldgruppe{background:var(--karte);border-radius:12px;overflow:hidden;margin-bottom:14px}
+.feld{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 14px;border-bottom:1px solid var(--linie-zart)}
+.feld:last-child{border-bottom:none}
+.feld label{font-size:15px;flex:none}
+.feld input[type=time],.feld input[type=date],.feld input[type=text],.feld input[type=number]{
+  font-family:var(--sans);font-size:17px;color:var(--tinte);
+  border:none;background:none;text-align:right;padding:2px 0;min-width:0;flex:1;
+}
+.feld input[type=text]{text-align:right}
+.feld input:focus{outline:none}
+.schalter{display:flex;background:var(--linie-zart);border-radius:9px;padding:2px;flex:none}
+.schalter button{padding:5px 13px;border-radius:7px;font-size:14px;color:var(--gedaempft)}
+.schalter button[aria-pressed=true]{background:var(--karte);color:var(--tinte);font-weight:600}
+.notiz{font-size:13px;color:var(--gedaempft);margin:-6px 4px 14px;line-height:1.45}
+.notiz.achtung{color:var(--warn)}
+.knopfreihe{display:flex;gap:10px}
+.knopf{flex:1;height:50px;border-radius:12px;display:grid;place-items:center;font-size:16px;font-weight:600}
+.knopf.voll{background:var(--tinte);color:#fff}
+.knopf.leer{background:var(--karte);border:1px solid var(--linie)}
+.knopf.gefahr{background:var(--karte);border:1px solid var(--warn);color:var(--warn)}
+.knopf:active{opacity:.8}
+:focus-visible{outline:2px solid var(--lauf);outline-offset:2px}
+</style>
+</head>
+<body>
+
+<header class="kopf">
+  <button class="pfeil" id="zurueck" aria-label="Voriger Monat">&#8249;</button>
+  <div class="monat" id="monatstitel">&nbsp;</div>
+  <button class="pfeil" id="vor" aria-label="Naechster Monat">&#8250;</button>
+  <button class="zahnrad" id="einstellungen-auf" aria-label="Einstellungen">
+    <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+      <circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v2.6M12 18.9v2.6M21.5 12h-2.6M5.1 12H2.5M18.7 5.3l-1.8 1.8M7.1 16.9l-1.8 1.8M18.7 18.7l-1.8-1.8M7.1 7.1L5.3 5.3"/>
+    </svg>
+  </button>
+</header>
+
+<div class="jobs" id="jobs"></div>
+
+<section id="laeuft-band"></section>
+
+<section class="konto" id="konto-karte"></section>
+
+<div class="summen" id="summen"></div>
+
+<main class="karte" id="karte"></main>
+
+<nav class="leiste">
+  <div class="feiertag-band" id="feiertag-band" hidden></div>
+  <div class="leiste-knoepfe">
+    <button class="stempel" id="stempel">Kommen</button>
+    <button class="nachtrag" id="nachtrag" aria-label="Zeit nachtragen">+</button>
+  </div>
+</nav>
+
+<div class="blende" id="blende"></div>
+
+<!-- Eintrag anlegen oder bearbeiten -->
+<div class="blatt" id="blatt-eintrag" role="dialog" aria-modal="true" aria-labelledby="blatt-titel">
+  <div class="griff"></div>
+  <h2 id="blatt-titel">Zeit nachtragen</h2>
+  <div class="feldgruppe">
+    <div class="feld"><label for="f-datum">Datum</label><input type="date" id="f-datum"></div>
+    <div class="feld"><label for="f-von">Von</label><input type="time" id="f-von"></div>
+    <div class="feld"><label for="f-bis">Bis</label><input type="time" id="f-bis"></div>
+    <div class="feld">
+      <label>Pause</label>
+      <div class="schalter" id="pausenwahl">
+        <button data-modus="auto" aria-pressed="true">Automatisch</button>
+        <button data-modus="hand" aria-pressed="false">Selbst</button>
+      </div>
+    </div>
+    <div class="feld" id="pause-hand" hidden><label for="f-pause">Minuten</label><input type="number" id="f-pause" min="0" max="600" step="5" inputmode="numeric"></div>
+    <div class="feld"><label for="f-notiz">Notiz</label><input type="text" id="f-notiz" placeholder="optional"></div>
+  </div>
+  <p class="notiz" id="vorschau">&nbsp;</p>
+  <div class="knopfreihe">
+    <button class="knopf leer" id="e-abbrechen">Abbrechen</button>
+    <button class="knopf voll" id="e-speichern">Speichern</button>
+  </div>
+  <div class="knopfreihe" id="loeschreihe" hidden style="margin-top:10px">
+    <button class="knopf gefahr" id="e-loeschen">Eintrag loeschen</button>
+  </div>
+</div>
+
+<!-- Einstellungen -->
+<div class="blatt" id="blatt-optionen" role="dialog" aria-modal="true" aria-labelledby="opt-titel">
+  <div class="griff"></div>
+  <h2 id="opt-titel">Einstellungen</h2>
+  <p class="notiz" style="margin-top:-8px">Die folgenden Werte gelten f&uuml;r <b id="o-jobname">Synera</b>. Jeder Job hat eigene Einstellungen und eine eigene Tabelle.</p>
+  <div class="feldgruppe">
+    <div class="feld"><label for="o-soll">Sollzeit pro Tag</label><input type="time" id="o-soll"></div>
+    <div class="feld" id="zeile-grenze"><label for="o-grenze">Verg&uuml;tungsgrenze</label><input type="time" id="o-grenze"></div>
+    <div class="feld" id="zeile-modus">
+      <label>Verg&uuml;tet wird</label>
+      <div class="schalter" id="modwahl">
+        <button data-modus="ueberhang" aria-pressed="true">&Uuml;berhang</button>
+        <button data-modus="gesamt" aria-pressed="false">Alles</button>
+      </div>
+    </div>
+    <div class="feld">
+      <label>Feiertage Bremen</label>
+      <div class="schalter" id="fewahl">
+        <button data-fe="an" aria-pressed="true">Beachten</button>
+        <button data-fe="aus" aria-pressed="false">Ignorieren</button>
+      </div>
+    </div>
+  </div>
+  <p class="notiz">Sollzeit <b>00:00</b> bedeutet: kein Soll und kein &Uuml;berstundenkonto. Sinnvoll f&uuml;r Nebent&auml;tigkeiten, bei denen nur die geleisteten Stunden z&auml;hlen.</p>
+
+  <div class="feldgruppe">
+    <div class="feld" id="zeile-modell">
+      <label>Soll rechnet nach</label>
+      <div class="schalter" id="modellwahl">
+        <button data-modell="eintraege" aria-pressed="true">Erfassten Tagen</button>
+        <button data-modell="arbeitstage" aria-pressed="false">Arbeitstagen</button>
+      </div>
+    </div>
+  </div>
+  <p class="notiz"><b>Erfasste Tage</b> zieht die Sollzeit nur f&uuml;r Tage ab, an denen ein Eintrag steht. Urlaub und Krankheit bleiben damit neutral.<br><br><b>Arbeitstage</b> zieht die Sollzeit f&uuml;r jeden Werktag ab, der kein Feiertag ist, vom ersten Eintrag bis heute. Das entspricht der Sicht der Lohnabrechnung, erzeugt aber Minusstunden f&uuml;r jeden Tag, den du nicht erfasst.</p>
+
+  <div class="feldgruppe">
+    <div class="feld" id="zeile-at"><label>Arbeitstage im Monat</label><span style="font-size:15px;color:var(--gedaempft)" id="o-at">&mdash;</span></div>
+    <div class="feld"><label>Google Drive</label><span style="font-size:15px;color:var(--gedaempft)" id="o-gstatus">Nicht verbunden</span></div>
+    <div class="feld"><label>Zeitzone</label><span style="font-size:15px;color:var(--gedaempft)" id="o-tz">&mdash;</span></div>
+    <div class="feld"><label>Pausenregel</label><span style="font-size:15px;color:var(--gedaempft)">Pauschal 30 / 45 Min</span></div>
+  </div>
+  <div class="knopfreihe" style="margin-bottom:10px">
+    <button class="knopf leer" id="o-gverbinden">Diesen Job synchronisieren</button>
+    <button class="knopf leer" id="o-goeffnen">Tabelle &ouml;ffnen</button>
+  </div>
+  <div class="knopfreihe" style="margin-bottom:10px">
+    <button class="knopf leer" id="o-galle">Alle Jobs synchronisieren</button>
+  </div>
+  <p class="notiz">Die App fragt nur den Zugriff <b>drive.file</b> an. Damit sieht sie ausschlie&szlig;lich die Tabellen, die sie selbst angelegt hat. Alles andere in deinem Drive bleibt f&uuml;r sie unsichtbar. Widerrufen kannst du den Zugriff unter myaccount.google.com/permissions.</p>
+
+  <div class="knopfreihe">
+    <button class="knopf leer" id="o-export">Als CSV teilen</button>
+    <button class="knopf voll" id="o-fertig">Fertig</button>
+  </div>
+  <div class="knopfreihe" style="margin-top:10px">
+    <button class="knopf gefahr" id="o-reset">Alle Daten loeschen</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ---------- Speicher. Faellt auf den Arbeitsspeicher zurueck, wenn der
+   Browser localStorage sperrt, damit die App nie hart abstuerzt. ---------- */
+var Speicher = (function () {
+  var puffer = null, echt = true;
+  try { window.localStorage.setItem('__t', '1'); window.localStorage.removeItem('__t'); }
+  catch (e) { echt = false; puffer = {}; }
+  return {
+    lies: function (k) { try { return echt ? localStorage.getItem(k) : puffer[k] || null; } catch (e) { return null; } },
+    schreib: function (k, v) { try { echt ? localStorage.setItem(k, v) : (puffer[k] = v); } catch (e) {} },
+    dauerhaft: echt
+  };
+})();
+
+var SCHLUESSEL = 'stempel.v1';
+var MIN_TAG = 1440;
+
+// Feiertage sind optional eingebunden. Fehlt die Datei, laeuft alles ohne sie weiter.
+var FT = window.Feiertage || {
+  feiertagAm: function () { return null; },
+  imMonat: function () { return []; },
+  arbeitstage: function (j, m) {
+    var letzter = new Date(Date.UTC(j, m, 0)).getUTCDate(), n = 0;
+    for (var t = 1; t <= letzter; t++) {
+      var wt = new Date(Date.UTC(j, m - 1, t)).getUTCDay();
+      if (wt !== 0 && wt !== 6) n++;
+    }
+    return n;
+  }
+};
+
+/* ---------- Jobs ---------- */
+var JOB_REIHE = ['synera', 'kinelense', 'kiwerkstatt'];
+var JOB_VORGABE = {
+  synera:      { name: 'Synera',       sollMin: 480, grenzeMin: 1200, modus: 'ueberhang', feiertage: true },
+  kinelense:   { name: 'Kinelense',    sollMin: 0,   grenzeMin: 0,    modus: 'ueberhang', feiertage: false },
+  kiwerkstatt: { name: 'KI-Werkstatt', sollMin: 0,   grenzeMin: 0,    modus: 'ueberhang', feiertage: false }
+};
+
+function frischerZustand() {
+  return {
+    v: 2,
+    aktuell: 'synera',
+    jobs: JSON.parse(JSON.stringify(JOB_VORGABE)),
+    aktiv: {},
+    eintraege: [],
+    optionen: { kontoModell: 'eintraege', letzteSync: {} }
+  };
+}
+
+var S = laden();
+
+function laden() {
+  var z = frischerZustand();
+  var roh = Speicher.lies(SCHLUESSEL);
+  if (!roh) return z;
+  var d;
+  try { d = JSON.parse(roh); } catch (e) { return z; }
+
+  if (d.v === 2 && d.jobs) {
+    JOB_REIHE.forEach(function (k) { if (d.jobs[k]) Object.assign(z.jobs[k], d.jobs[k]); });
+    if (z.jobs[d.aktuell]) z.aktuell = d.aktuell;
+    if (d.aktiv && typeof d.aktiv === 'object') z.aktiv = d.aktiv;
+    if (d.optionen) Object.assign(z.optionen, d.optionen);
+  } else if (d.optionen) {
+    // Fassung 1 kannte nur einen Job. Alles Bisherige gehoert zu Synera.
+    if (Number.isFinite(d.optionen.sollMin)) z.jobs.synera.sollMin = d.optionen.sollMin;
+    if (Number.isFinite(d.optionen.grenzeMin)) z.jobs.synera.grenzeMin = d.optionen.grenzeMin;
+    if (d.optionen.modus === 'gesamt') z.jobs.synera.modus = 'gesamt';
+    if (d.optionen.letzteSync) z.optionen.letzteSync.synera = d.optionen.letzteSync;
+    if (d.aktiv && d.aktiv.date) z.aktiv.synera = d.aktiv;
+  } else if (d.aktiv && d.aktiv.date) {
+    z.aktiv.synera = d.aktiv;
+  }
+
+  z.eintraege = Array.isArray(d.eintraege) ? d.eintraege : [];
+  z.eintraege.forEach(function (e) { if (!e.job || !z.jobs[e.job]) e.job = 'synera'; });
+
+  JOB_REIHE.forEach(function (k) {
+    var j = z.jobs[k];
+    if (!Number.isFinite(j.sollMin)) j.sollMin = JOB_VORGABE[k].sollMin;
+    if (!Number.isFinite(j.grenzeMin)) j.grenzeMin = JOB_VORGABE[k].grenzeMin;
+    if (j.modus !== 'gesamt') j.modus = 'ueberhang';
+    j.feiertage = j.feiertage !== false;
+    j.name = JOB_VORGABE[k].name;
+  });
+  if (z.optionen.kontoModell !== 'arbeitstage') z.optionen.kontoModell = 'eintraege';
+  if (!z.optionen.letzteSync || typeof z.optionen.letzteSync !== 'object') z.optionen.letzteSync = {};
+  return z;
+}
+function sichern() { Speicher.schreib(SCHLUESSEL, JSON.stringify(S)); }
+
+function job(k) { return S.jobs[k || S.aktuell]; }
+function eintraegeVon(k) {
+  k = k || S.aktuell;
+  return S.eintraege.filter(function (e) { return e.job === k; });
+}
+function aktivVon(k) { return S.aktiv[k || S.aktuell] || null; }
+
+/* ---------- Kernlogik ---------- */
+function autoPause(bruttoMin) {
+  if (bruttoMin > 540) return 45;
+  if (bruttoMin > 360) return 30;
+  return 0;
+}
+function brutto(startMin, endMin) { var d = endMin - startMin; if (d < 0) d += MIN_TAG; return d; }
+function effektivePause(e) {
+  if (e.pauseAuto === false && Number.isFinite(e.pauseMin)) return e.pauseMin;
+  return autoPause(brutto(e.startMin, e.endMin));
+}
+function netto(e) { return Math.max(0, brutto(e.startMin, e.endMin) - effektivePause(e)); }
+function tageDiff(a, b) { return Math.round((Date.parse(b + 'T00:00:00Z') - Date.parse(a + 'T00:00:00Z')) / 86400000); }
+function hinweise(e, vorher) {
+  var out = [];
+  if (netto(e) > 600) out.push('\u00dcber 10 Stunden Arbeitszeit. ArbZG \u00a73 l\u00e4sst das nur zu, wenn du es im Halbjahresschnitt wieder ausgleichst.');
+  if (vorher) {
+    var ueber = vorher.endMin < vorher.startMin ? MIN_TAG : 0;
+    var endeVorher = vorher.endMin + ueber - tageDiff(vorher.date, e.date) * MIN_TAG;
+    var ruhe = e.startMin - endeVorher;
+    if (ruhe >= 0 && ruhe < 660) out.push('Weniger als 11 Stunden Ruhezeit seit dem letzten Feierabend.');
+  }
+  return out;
+}
+
+/* ---------- Formate ---------- */
+function hhmm(min) {
+  var v = Math.max(0, Math.round(min));
+  return String(Math.floor(v / 60)).padStart(2, '0') + ':' + String(v % 60).padStart(2, '0');
+}
+function saldoText(min) { return (min < 0 ? '\u2212' : '+') + hhmm(Math.abs(min)); }
+function heuteISO(d) {
+  d = d || new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function minutenJetzt(d) { d = d || new Date(); return d.getHours() * 60 + d.getMinutes(); }
+var WOCHENTAGE = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+var MONATE = ['Januar', 'Februar', 'M\u00e4rz', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+function datumAus(iso) { return new Date(iso + 'T12:00:00'); }
+function txt(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+/* ---------- Soll und Konto ---------- */
+function monatsSoll(k, jahr, monat) {
+  var j = job(k);
+  if (!j.sollMin) return null;
+  return FT.arbeitstage(jahr, monat, j.feiertage) * j.sollMin;
+}
+function arbeitstageIm(k, jahr, monat) {
+  return FT.arbeitstage(jahr, monat, job(k).feiertage);
+}
+
+// Soll vom ersten Eintrag bis heute, gerechnet ueber die Arbeitstage des Kalenders.
+function sollNachArbeitstagen(k) {
+  var j = job(k), liste = eintraegeVon(k);
+  if (!liste.length || !j.sollMin) return 0;
+  var erster = liste.map(function (e) { return e.date; }).sort()[0];
+  var jj = parseInt(erster.slice(0, 4), 10), mm = parseInt(erster.slice(5, 7), 10);
+  var heute = new Date(), hj = heute.getFullYear(), hm = heute.getMonth() + 1;
+  var soll = 0, schutz = 0;
+  while ((jj < hj || (jj === hj && mm <= hm)) && schutz++ < 600) {
+    var bis = (jj === hj && mm === hm) ? heute.getDate() : null;
+    soll += FT.arbeitstage(jj, mm, j.feiertage, bis) * j.sollMin;
+    mm++; if (mm > 12) { mm = 1; jj++; }
+  }
+  return soll;
+}
+
+function kontoStand(k) {
+  k = k || S.aktuell;
+  var j = job(k), liste = eintraegeVon(k);
+  var summe = 0, tage = {};
+  liste.forEach(function (e) { summe += netto(e); tage[e.date] = 1; });
+  var anzahl = Object.keys(tage).length;
+  if (!j.sollMin) return { summe: summe, tage: anzahl, konto: null };
+  var soll = S.optionen.kontoModell === 'arbeitstage'
+    ? sollNachArbeitstagen(k)
+    : anzahl * j.sollMin;
+  return { summe: summe, tage: anzahl, soll: soll, konto: summe - soll };
+}
+
+/* ---------- Zustand der Ansicht ---------- */
+var jetzt = new Date();
+var blickJahr = jetzt.getFullYear(), blickMonat = jetzt.getMonth();
+var bearbeitetId = null;
+var pausenModus = 'auto';
+var ticker = null;
+var syncLaeuft = false;
+
+function monatsEintraege() {
+  var pre = blickJahr + '-' + String(blickMonat + 1).padStart(2, '0');
+  return eintraegeVon().filter(function (e) { return e.date.indexOf(pre) === 0; })
+    .sort(function (a, b) { return a.date === b.date ? b.startMin - a.startMin : (a.date < b.date ? 1 : -1); });
+}
+
+/* ---------- Zeichnen ---------- */
+function zeichne() {
+  document.getElementById('monatstitel').textContent = MONATE[blickMonat] + ' ' + blickJahr;
+  var liste = monatsEintraege();
+  zeichneJobs();
+  zeichneSummen(liste);
+  zeichneLauf();
+  zeichneKonto();
+  zeichneKarte(liste);
+  zeichneStempel();
+  zeichneFeiertagsband();
+}
+
+function zeichneJobs() {
+  var el = document.getElementById('jobs');
+  el.innerHTML = JOB_REIHE.map(function (k) {
+    return '<button class="chip' + (k === S.aktuell ? ' an' : '') + '" data-job="' + k + '">' +
+      (S.aktiv[k] ? '<span class="chip-punkt"></span>' : '') + txt(S.jobs[k].name) + '</button>';
+  }).join('');
+  Array.prototype.forEach.call(el.querySelectorAll('.chip'), function (b) {
+    b.addEventListener('click', function () {
+      S.aktuell = b.dataset.job; sichern(); zeichne();
+    });
+  });
+}
+
+function zeichneSummen(liste) {
+  var summe = liste.reduce(function (a, e) { return a + netto(e); }, 0);
+  var tage = {}; liste.forEach(function (e) { tage[e.date] = 1; });
+  var anzahlTage = Object.keys(tage).length;
+  var soll = monatsSoll(null, blickJahr, blickMonat + 1);
+  var kacheln;
+
+  if (soll === null) {
+    kacheln = [
+      [hhmm(summe), 'Gearbeitet', ''],
+      [String(anzahlTage), 'Tage', ''],
+      [String(liste.length), 'Eintr\u00e4ge', '']
+    ];
+  } else {
+    var at = arbeitstageIm(null, blickJahr, blickMonat + 1);
+    var diff = summe - soll;
+    kacheln = [
+      [hhmm(summe), 'Gearbeitet', ''],
+      [hhmm(soll), 'Soll f\u00fcr ' + at + ' Tage', ''],
+      [saldoText(diff), 'Differenz', diff < 0 ? 'minus' : diff > 0 ? 'plus' : '']
+    ];
+  }
+
+  document.getElementById('summen').innerHTML = kacheln.map(function (k) {
+    return '<div><div class="summe-wert zahl ' + k[2] + '">' + k[0] + '</div><div class="summe-label">' + k[1] + '</div></div>';
+  }).join('');
+}
+
+function zeichneStempel() {
+  var b = document.getElementById('stempel');
+  var an = !!aktivVon();
+  b.textContent = an ? 'Gehen' : 'Kommen';
+  b.className = 'stempel' + (an ? ' aktiv' : '');
+}
+
+function zeichneFeiertagsband() {
+  var el = document.getElementById('feiertag-band');
+  var name = job().feiertage ? FT.feiertagAm(heuteISO()) : null;
+  if (!name) { el.hidden = true; return; }
+  el.hidden = false;
+  el.innerHTML = '<b>' + txt(name) + '</b><span>gesetzlicher Feiertag in Bremen</span>';
+}
+
+function zeichneLauf() {
+  var band = document.getElementById('laeuft-band');
+  var a = aktivVon();
+  if (!a) {
+    band.innerHTML = '';
+    if (ticker) { clearInterval(ticker); ticker = null; }
+    return;
+  }
+  var b = brutto(a.startMin, minutenJetzt());
+  var p = autoPause(b);
+  band.innerHTML =
+    '<div class="laeuft">' +
+      '<div class="laeuft-kopf"><span class="puls"></span>' + txt(job().name) + ', seit ' + hhmm(a.startMin) + ' im Dienst</div>' +
+      '<div class="laeuft-zeit zahl">' + hhmm(Math.max(0, b - p)) + '</div>' +
+      '<div class="laeuft-fuss">' + hhmm(b) + ' anwesend, ' + (p ? p + ' Min Pause abgezogen' : 'noch keine Pause f\u00e4llig') + '</div>' +
+    '</div>';
+  if (!ticker) ticker = setInterval(zeichneLauf, 20000);
+}
+
+function zeichneKonto() {
+  var el = document.getElementById('konto-karte');
+  var st = kontoStand();
+
+  if (st.konto === null) {
+    el.innerHTML =
+      '<div class="konto-kopf"><span>Erfasste Stunden</span>' + syncKnopfHtml() + '</div>' +
+      '<div class="konto-wert zahl">' + hhmm(st.summe) + '</div>' +
+      '<div class="konto-fuss">An ' + st.tage + ' Tagen erfasst. F\u00fcr diesen Job ist keine Sollzeit hinterlegt, es gibt also kein \u00dcberstundenkonto.</div>';
+    hefteSyncKnopf();
+    return;
+  }
+
+  var k = st.konto, g = job().grenzeMin;
+  var max = Math.max(g, k, 1);
+  var basis = Math.max(0, Math.min(k, g));
+  var fuss, zahlbar = false;
+
+  if (k < 0) {
+    fuss = '<b>' + hhmm(-k) + '</b> im Minus. Bis zur Grenze fehlen ' + hhmm(g - k) + '.';
+  } else if (k < g) {
+    fuss = 'Noch <b>' + hhmm(g - k) + '</b> bis zur Grenze von ' + hhmm(g) + '.';
+  } else {
+    zahlbar = true;
+    var betrag = job().modus === 'gesamt' ? k : k - g;
+    fuss = betrag > 0
+      ? '<b>' + hhmm(betrag) + '</b> sind verg\u00fctungsf\u00e4hig.'
+      : 'Die Grenze ist erreicht. Ab jetzt z\u00e4hlt jede Stunde.';
+  }
+
+  el.innerHTML =
+    '<div class="konto-kopf"><span>\u00dcberstundenkonto ' + txt(job().name) + '</span>' + syncKnopfHtml() + '</div>' +
+    '<div class="konto-wert zahl' + (k < 0 ? ' minus' : '') + '">' + (k < 0 ? '\u2212' : '') + hhmm(Math.abs(k)) + '</div>' +
+    '<div class="konto-spur">' +
+      '<span class="konto-fuell" style="width:' + ((basis / max) * 100).toFixed(2) + '%"></span>' +
+      (k > g ? '<span class="konto-ueber" style="left:' + ((g / max) * 100).toFixed(2) + '%;width:' + (((k - g) / max) * 100).toFixed(2) + '%"></span>' : '') +
+      '<span class="konto-grenze" style="left:' + ((g / max) * 100).toFixed(2) + '%"></span>' +
+    '</div>' +
+    '<div class="konto-fuss' + (zahlbar ? ' zahlbar' : '') + '">' + fuss + '</div>';
+  hefteSyncKnopf();
+}
+
+function syncKnopfHtml() {
+  if (!window.GSync || !GSync.konfiguriert()) return '<span class="sync-knopf">Nur lokal</span>';
+  if (syncLaeuft) return '<span class="sync-knopf">\u00dcbertr\u00e4gt \u2026</span>';
+  var t = S.optionen.letzteSync[S.aktuell];
+  if (!t) return '<button class="sync-knopf" id="sync-knopf">Mit Google verbinden</button>';
+  var d = new Date(t);
+  var frisch = (Date.now() - t) < 6 * 3600 * 1000;
+  return '<button class="sync-knopf' + (frisch ? ' frisch' : '') + '" id="sync-knopf">Sync ' +
+    String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') + '</button>';
+}
+function hefteSyncKnopf() {
+  var sk = document.getElementById('sync-knopf');
+  if (sk) sk.addEventListener('click', function () { starteSync(false, S.aktuell); });
+}
+
+function zeichneKarte(liste) {
+  var karte = document.getElementById('karte');
+  var pre = blickJahr + '-' + String(blickMonat + 1).padStart(2, '0');
+  var a = aktivVon();
+  var offen = a && a.date.indexOf(pre) === 0;
+
+  // Feiertage des Monats, an denen nichts erfasst wurde
+  var belegt = {}; liste.forEach(function (e) { belegt[e.date] = 1; });
+  var freie = job().feiertage
+    ? FT.imMonat(blickJahr, blickMonat + 1).filter(function (f) { return !belegt[f.datum]; })
+    : [];
+
+  if (!liste.length && !offen && !freie.length) {
+    karte.innerHTML = '<p class="leerbild">Noch keine Zeiten f\u00fcr ' + txt(job().name) + ' in diesem Monat.<br>Tippe unten auf Kommen, oder trage eine Zeit nach.</p>';
+    return;
+  }
+
+  var von = 360, bis = 1200;
+  liste.forEach(function (e) {
+    von = Math.min(von, e.startMin);
+    bis = Math.max(bis, e.startMin + brutto(e.startMin, e.endMin));
+  });
+  if (offen) { von = Math.min(von, a.startMin); bis = Math.max(bis, minutenJetzt() + 30); }
+  von = Math.floor(von / 60) * 60; bis = Math.ceil(bis / 60) * 60;
+  var spanne = Math.max(60, bis - von);
+
+  // Eintraege und freie Tage in eine gemeinsame, absteigende Reihenfolge bringen
+  var posten = liste.map(function (e) { return { datum: e.date, e: e }; })
+    .concat(freie.map(function (f) { return { datum: f.datum, frei: f.name }; }))
+    .sort(function (x, y) { return x.datum === y.datum ? 0 : (x.datum < y.datum ? 1 : -1); });
+
+  var html = '', letztesDatum = '';
+  if (offen) {
+    html += zeileHtml({ id: '__aktiv', date: a.date, startMin: a.startMin, endMin: Math.max(a.startMin + 1, minutenJetzt()), pauseAuto: true }, von, spanne, true, true);
+    letztesDatum = a.date;
+  }
+  posten.forEach(function (p) {
+    var zeigeDatum = p.datum !== letztesDatum;
+    letztesDatum = p.datum;
+    html += p.frei ? freiZeileHtml(p.datum, p.frei, zeigeDatum) : zeileHtml(p.e, von, spanne, zeigeDatum, false);
+  });
+  html += '<div class="skala"><span>' + hhmm(von) + '</span><span>' + hhmm(von + spanne / 2) + '</span><span>' + hhmm(bis) + '</span></div>';
+  karte.innerHTML = html;
+
+  Array.prototype.forEach.call(karte.querySelectorAll('.zeile[data-id]'), function (el) {
+    el.addEventListener('click', function () {
+      var id = el.getAttribute('data-id');
+      if (id !== '__aktiv') blattEintragOeffnen(id);
+    });
+  });
+}
+
+function tagZelle(iso, zeigeDatum) {
+  var d = datumAus(iso);
+  return '<span class="tag' + (zeigeDatum ? '' : ' leer') + '">' + WOCHENTAGE[d.getDay()] + '<b>' + d.getDate() + '</b></span>';
+}
+
+function freiZeileHtml(iso, name, zeigeDatum) {
+  return '<div class="zeile freizeile">' + tagZelle(iso, zeigeDatum) +
+    '<span class="frei">' + txt(name) + '</span><span class="netto">frei</span></div>';
+}
+
+function zeileHtml(e, von, spanne, zeigeDatum, istOffen) {
+  var d = datumAus(e.date);
+  var we = d.getDay() === 0 || d.getDay() === 6;
+  var feiertag = job().feiertage && FT.feiertagAm(e.date);
+  var b = brutto(e.startMin, e.endMin);
+  var links = ((e.startMin - von) / spanne) * 100;
+  var breite = (b / spanne) * 100;
+  var vorher = istOffen ? null : S.eintraege.filter(function (x) {
+    return x.job === S.aktuell && x.id !== e.id && x.date < e.date;
+  }).sort(function (p, q) { return p.date < q.date ? 1 : -1; })[0] || null;
+  var warnungen = istOffen ? [] : hinweise(e, vorher);
+
+  return '<button class="zeile' + (we || feiertag ? ' wochenende' : '') + '" data-id="' + e.id + '">' +
+      tagZelle(e.date, zeigeDatum) +
+      '<span class="spur">' +
+        '<span class="balken' + (istOffen ? ' offen' : '') + '" style="left:' + links.toFixed(2) + '%;width:' + Math.max(1.2, breite).toFixed(2) + '%"></span>' +
+      '</span>' +
+      '<span class="netto">' + (istOffen ? '\u00b7\u00b7\u00b7' : hhmm(netto(e))) +
+        (warnungen.length ? '<span class="hinweis-punkt"></span>' : '') +
+      '</span>' +
+    '</button>';
+}
+
+/* ---------- Stempeln ---------- */
+function neueId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+function letzterVor(e) {
+  return S.eintraege.filter(function (x) { return x.job === e.job && x.id !== e.id && x.date < e.date; })
+    .sort(function (a, b) { return a.date < b.date ? 1 : -1; })[0] || null;
+}
+
+document.getElementById('stempel').addEventListener('click', function () {
+  var k = S.aktuell, a = aktivVon(k);
+  if (a) {
+    var e = {
+      id: neueId(), job: k, date: a.date, startMin: a.startMin, endMin: minutenJetzt(),
+      pauseAuto: true, pauseMin: null, notiz: '', quelle: 'stempel'
+    };
+    delete S.aktiv[k];
+    if (brutto(e.startMin, e.endMin) < 1) { sichern(); zeichne(); return; }
+    S.eintraege.push(e);
+    sichern(); zeichne(); syncStill();
+    var w = hinweise(e, letzterVor(e));
+    if (w.length) setTimeout(function () { alert(w.join('\n\n')); }, 260);
+  } else {
+    var heute = heuteISO();
+    S.aktiv[k] = { date: heute, startMin: minutenJetzt() };
+    sichern();
+    blickJahr = new Date().getFullYear(); blickMonat = new Date().getMonth();
+    zeichne();
+    var f = job(k).feiertage && FT.feiertagAm(heute);
+    if (f) setTimeout(function () {
+      alert('Heute ist ' + f + ', ein gesetzlicher Feiertag in Bremen.\n\nDie Zeit wird ganz normal erfasst. Ob sie als Mehrarbeit gilt, regelt dein Vertrag.');
+    }, 240);
+  }
+});
+
+/* ---------- Monatsnavigation ---------- */
+document.getElementById('zurueck').addEventListener('click', function () {
+  blickMonat--; if (blickMonat < 0) { blickMonat = 11; blickJahr--; } zeichne();
+});
+document.getElementById('vor').addEventListener('click', function () {
+  blickMonat++; if (blickMonat > 11) { blickMonat = 0; blickJahr++; } zeichne();
+});
+
+/* ---------- Blaetter ---------- */
+var blende = document.getElementById('blende');
+function blattAuf(id) { document.getElementById(id).classList.add('auf'); blende.classList.add('auf'); }
+function blattZu() {
+  document.getElementById('blatt-eintrag').classList.remove('auf');
+  document.getElementById('blatt-optionen').classList.remove('auf');
+  blende.classList.remove('auf');
+  bearbeitetId = null;
+}
+blende.addEventListener('click', blattZu);
+
+function setzePausenModus(m) {
+  pausenModus = m;
+  Array.prototype.forEach.call(document.querySelectorAll('#pausenwahl button'), function (b) {
+    b.setAttribute('aria-pressed', String(b.dataset.modus === m));
+  });
+  document.getElementById('pause-hand').hidden = (m !== 'hand');
+  vorschau();
+}
+Array.prototype.forEach.call(document.querySelectorAll('#pausenwahl button'), function (b) {
+  b.addEventListener('click', function () { setzePausenModus(b.dataset.modus); });
+});
+
+document.getElementById('nachtrag').addEventListener('click', function () { blattEintragOeffnen(null); });
+
+function blattEintragOeffnen(id) {
+  bearbeitetId = id;
+  var e = id ? S.eintraege.find(function (x) { return x.id === id; }) : null;
+  document.getElementById('blatt-titel').textContent = (e ? 'Zeit bearbeiten' : 'Zeit nachtragen') + ' \u2014 ' + job().name;
+  document.getElementById('loeschreihe').hidden = !e;
+  document.getElementById('f-datum').value = e ? e.date : heuteISO();
+  document.getElementById('f-von').value = e ? hhmm(e.startMin) : '08:00';
+  document.getElementById('f-bis').value = e ? hhmm(e.endMin) : '17:00';
+  document.getElementById('f-notiz').value = e ? (e.notiz || '') : '';
+  document.getElementById('f-pause').value = e && e.pauseAuto === false ? e.pauseMin : 30;
+  setzePausenModus(e && e.pauseAuto === false ? 'hand' : 'auto');
+  blattAuf('blatt-eintrag');
+}
+
+function feldMinuten(id) {
+  var v = document.getElementById(id).value;
+  if (!v) return null;
+  var t = v.split(':');
+  return parseInt(t[0], 10) * 60 + parseInt(t[1], 10);
+}
+
+function vorschau() {
+  var s = feldMinuten('f-von'), en = feldMinuten('f-bis');
+  var p = document.getElementById('vorschau');
+  if (s === null || en === null) { p.textContent = '\u00a0'; p.className = 'notiz'; return; }
+  var b = brutto(s, en);
+  var pause = pausenModus === 'hand'
+    ? Math.max(0, parseInt(document.getElementById('f-pause').value || '0', 10))
+    : autoPause(b);
+  var n = Math.max(0, b - pause);
+  var achtung = n > 600;
+  var t = hhmm(b) + ' anwesend, ' + pause + ' Minuten Pause, ergibt ' + hhmm(n) + ' Arbeitszeit.';
+  var datum = document.getElementById('f-datum').value;
+  var f = datum && job().feiertage && FT.feiertagAm(datum);
+  if (f) t += ' Der ' + datum.slice(8) + '. ist ' + f + '.';
+  if (en < s) t += ' Der Eintrag l\u00e4uft \u00fcber Mitternacht.';
+  if (achtung) t += ' Das liegt \u00fcber der Grenze von 10 Stunden.';
+  p.textContent = t;
+  p.className = 'notiz' + (achtung ? ' achtung' : '');
+}
+['f-von', 'f-bis', 'f-pause', 'f-datum'].forEach(function (id) {
+  document.getElementById(id).addEventListener('input', vorschau);
+});
+
+document.getElementById('e-abbrechen').addEventListener('click', blattZu);
+
+document.getElementById('e-speichern').addEventListener('click', function () {
+  var datum = document.getElementById('f-datum').value;
+  var s = feldMinuten('f-von'), en = feldMinuten('f-bis');
+  if (!datum || s === null || en === null) { alert('Datum, Von und Bis werden gebraucht.'); return; }
+  if (brutto(s, en) < 1) { alert('Von und Bis d\u00fcrfen nicht gleich sein.'); return; }
+  var handPause = Math.max(0, parseInt(document.getElementById('f-pause').value || '0', 10));
+  if (pausenModus === 'hand' && handPause >= brutto(s, en)) { alert('Die Pause ist l\u00e4nger als die Anwesenheit.'); return; }
+
+  var felder = {
+    date: datum, startMin: s, endMin: en,
+    pauseAuto: pausenModus === 'auto',
+    pauseMin: pausenModus === 'hand' ? handPause : null,
+    notiz: document.getElementById('f-notiz').value.trim()
+  };
+  if (bearbeitetId) {
+    var i = S.eintraege.findIndex(function (x) { return x.id === bearbeitetId; });
+    if (i >= 0) S.eintraege[i] = Object.assign({}, S.eintraege[i], felder);
+  } else {
+    S.eintraege.push(Object.assign({ id: neueId(), job: S.aktuell, quelle: 'manuell' }, felder));
+  }
+  sichern();
+  var d = datumAus(datum);
+  blickJahr = d.getFullYear(); blickMonat = d.getMonth();
+  blattZu(); zeichne(); syncStill();
+});
+
+document.getElementById('e-loeschen').addEventListener('click', function () {
+  if (!bearbeitetId) return;
+  if (!confirm('Diesen Eintrag l\u00f6schen?')) return;
+  S.eintraege = S.eintraege.filter(function (x) { return x.id !== bearbeitetId; });
+  sichern(); blattZu(); zeichne(); syncStill();
+});
+
+/* ---------- Google-Synchronisierung ---------- */
+function syncKontext(k) {
+  var j = job(k);
+  return {
+    jobKey: k,
+    jobName: j.name,
+    eintraege: eintraegeVon(k),
+    sollMin: j.sollMin,
+    grenzeMin: j.grenzeMin,
+    modus: j.modus,
+    kontoModell: S.optionen.kontoModell,
+    netto: netto,
+    effektivePause: effektivePause,
+    hhmm: hhmm,
+    wochentag: function (iso) { return WOCHENTAGE[datumAus(iso).getDay()]; },
+    feiertagAm: function (iso) { return j.feiertage ? FT.feiertagAm(iso) : null; },
+    arbeitstage: function (jahr, monat) { return FT.arbeitstage(jahr, monat, j.feiertage); },
+    zeitstempel: new Date().toLocaleString('de-DE')
+  };
+}
+
+async function starteSync(interaktiv, welche) {
+  if (!window.GSync || !GSync.konfiguriert()) {
+    alert('Es ist noch keine Google-Client-ID hinterlegt. Trage sie in config.js ein, die Schritte stehen in der README.');
+    return;
+  }
+  if (syncLaeuft) return;
+  var jobs = welche === '*' ? JOB_REIHE.filter(function (k) { return eintraegeVon(k).length; }) : [welche || S.aktuell];
+  if (!jobs.length) { alert('F\u00fcr diesen Job gibt es noch nichts zu \u00fcbertragen.'); return; }
+
+  syncLaeuft = true; zeichne();
+  try {
+    for (var i = 0; i < jobs.length; i++) {
+      await GSync.sync(syncKontext(jobs[i]), !!interaktiv && i === 0, jobs[i]);
+      S.optionen.letzteSync[jobs[i]] = Date.now();
+      sichern();
+    }
+  } catch (e) {
+    alert(e && e.message ? e.message : 'Die \u00dcbertragung hat nicht geklappt.');
+  } finally {
+    syncLaeuft = false; zeichne();
+  }
+}
+function syncStill() {
+  if (window.GSync && GSync.konfiguriert() && GSync.verbunden()) starteSync(false, S.aktuell);
+}
+
+/* ---------- Einstellungen ---------- */
+document.getElementById('einstellungen-auf').addEventListener('click', function () {
+  var j = job();
+  document.getElementById('o-jobname').textContent = j.name;
+  document.getElementById('o-soll').value = hhmm(j.sollMin);
+  document.getElementById('o-grenze').value = hhmm(j.grenzeMin);
+  document.getElementById('zeile-grenze').hidden = !j.sollMin;
+  document.getElementById('zeile-modus').hidden = !j.sollMin;
+  document.getElementById('zeile-modell').hidden = !j.sollMin;
+  document.getElementById('zeile-at').hidden = !j.sollMin;
+  setzeSchalter('modwahl', 'modus', j.modus);
+  setzeSchalter('fewahl', 'fe', j.feiertage ? 'an' : 'aus');
+  setzeSchalter('modellwahl', 'modell', S.optionen.kontoModell);
+  document.getElementById('o-at').textContent =
+    arbeitstageIm(null, blickJahr, blickMonat + 1) + ' im ' + MONATE[blickMonat] +
+    ' (' + FT.imMonat(blickJahr, blickMonat + 1).length + ' Feiertage)';
+  document.getElementById('o-tz').textContent = window.GSync ? GSync.zeitzone() : '\u2014';
+  var g = document.getElementById('o-gstatus');
+  if (!window.GSync || !GSync.konfiguriert()) g.textContent = 'Keine Client-ID';
+  else if (S.optionen.letzteSync[S.aktuell]) g.textContent = new Date(S.optionen.letzteSync[S.aktuell]).toLocaleString('de-DE');
+  else g.textContent = 'Noch nicht verbunden';
+  blattAuf('blatt-optionen');
+});
+
+function setzeSchalter(gruppe, feld, wert) {
+  Array.prototype.forEach.call(document.querySelectorAll('#' + gruppe + ' button'), function (b) {
+    b.setAttribute('aria-pressed', String(b.dataset[feld] === wert));
+  });
+}
+
+document.getElementById('o-soll').addEventListener('change', function () {
+  var m = feldMinuten('o-soll');
+  if (m === null) return;
+  job().sollMin = m;
+  document.getElementById('zeile-grenze').hidden = !m;
+  document.getElementById('zeile-modus').hidden = !m;
+  document.getElementById('zeile-modell').hidden = !m;
+  document.getElementById('zeile-at').hidden = !m;
+  sichern(); zeichne();
+});
+document.getElementById('o-grenze').addEventListener('change', function () {
+  var m = feldMinuten('o-grenze');
+  if (m !== null) { job().grenzeMin = m; sichern(); zeichne(); }
+});
+Array.prototype.forEach.call(document.querySelectorAll('#modwahl button'), function (b) {
+  b.addEventListener('click', function () { job().modus = b.dataset.modus; setzeSchalter('modwahl', 'modus', b.dataset.modus); sichern(); zeichne(); });
+});
+Array.prototype.forEach.call(document.querySelectorAll('#fewahl button'), function (b) {
+  b.addEventListener('click', function () {
+    job().feiertage = b.dataset.fe === 'an';
+    setzeSchalter('fewahl', 'fe', b.dataset.fe);
+    document.getElementById('o-at').textContent =
+      arbeitstageIm(null, blickJahr, blickMonat + 1) + ' im ' + MONATE[blickMonat] +
+      ' (' + FT.imMonat(blickJahr, blickMonat + 1).length + ' Feiertage)';
+    sichern(); zeichne();
+  });
+});
+Array.prototype.forEach.call(document.querySelectorAll('#modellwahl button'), function (b) {
+  b.addEventListener('click', function () {
+    S.optionen.kontoModell = b.dataset.modell;
+    setzeSchalter('modellwahl', 'modell', b.dataset.modell);
+    sichern(); zeichne();
+  });
+});
+document.getElementById('o-gverbinden').addEventListener('click', function () { starteSync(true, S.aktuell); });
+document.getElementById('o-galle').addEventListener('click', function () { starteSync(true, '*'); });
+document.getElementById('o-goeffnen').addEventListener('click', function () {
+  var l = window.GSync && GSync.tabellenLink(S.aktuell);
+  if (!l) { alert('Die Tabelle f\u00fcr diesen Job wird bei der ersten Synchronisierung angelegt.'); return; }
+  window.open(l, '_blank', 'noopener');
+});
+document.getElementById('o-fertig').addEventListener('click', blattZu);
+document.getElementById('o-reset').addEventListener('click', function () {
+  if (!confirm('Wirklich alle erfassten Zeiten aller Jobs l\u00f6schen? Das l\u00e4sst sich nicht r\u00fcckg\u00e4ngig machen.')) return;
+  S.eintraege = []; S.aktiv = {}; S.optionen.letzteSync = {};
+  sichern(); blattZu(); zeichne();
+});
+
+/* ---------- CSV teilen ---------- */
+function csvText() {
+  var zeilen = ['Job;Datum;Wochentag;Feiertag;Von;Bis;Pause_Min;Arbeitszeit;Stunden_dezimal;Quelle;Notiz'];
+  S.eintraege.slice().sort(function (a, b) {
+    if (a.job !== b.job) return a.job < b.job ? -1 : 1;
+    return a.date === b.date ? a.startMin - b.startMin : (a.date < b.date ? -1 : 1);
+  }).forEach(function (e) {
+    var n = netto(e);
+    zeilen.push([
+      S.jobs[e.job] ? S.jobs[e.job].name : e.job,
+      e.date,
+      WOCHENTAGE[datumAus(e.date).getDay()],
+      (S.jobs[e.job] && S.jobs[e.job].feiertage && FT.feiertagAm(e.date)) || '',
+      hhmm(e.startMin), hhmm(e.endMin),
+      effektivePause(e),
+      hhmm(n),
+      (n / 60).toFixed(2).replace('.', ','),
+      e.quelle === 'stempel' ? 'Gestempelt' : 'Nachgetragen',
+      (e.notiz || '').replace(/[;\r\n]/g, ' ')
+    ].join(';'));
+  });
+  return '\ufeff' + zeilen.join('\r\n');
+}
+
+document.getElementById('o-export').addEventListener('click', async function () {
+  if (!S.eintraege.length) { alert('Es gibt noch nichts zu exportieren.'); return; }
+  var name = 'arbeitszeiten-' + heuteISO() + '.csv';
+  var blob = new Blob([csvText()], { type: 'text/csv' });
+  try {
+    var datei = new File([blob], name, { type: 'text/csv' });
+    if (navigator.canShare && navigator.canShare({ files: [datei] })) {
+      await navigator.share({ files: [datei], title: 'Arbeitszeiten' });
+      return;
+    }
+  } catch (err) { if (err && err.name === 'AbortError') return; }
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  setTimeout(function () { URL.revokeObjectURL(a.href); }, 1500);
+});
+
+/* ---------- Start ---------- */
+document.addEventListener('visibilitychange', function () {
+  if (!document.hidden) { S = laden(); zeichne(); }
+});
+zeichne();
+
+if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
+  navigator.serviceWorker.register('sw.js').catch(function () {});
+}
+</script>
+</body>
+</html>
