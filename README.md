@@ -21,7 +21,10 @@ und synchronisiert in eine Google-Tabelle in deinem Drive.
 - Monatsansicht mit Summe, Saldo und Anzahl der Tage
 - Hinweis bei mehr als 10 Stunden Arbeitszeit (§3) und unter 11 Stunden Ruhezeit (§5)
 - Synchronisierung nach Google Sheets, ein Blatt pro Jahr
-- Export als CSV ueber das iOS-Teilen-Menue
+- **Export und Import als CSV**, praktisch als Sicherung vor einer Neuinstallation
+- Kein Zoomen aus Versehen: die Seite ist fest auf einen Massstab gesperrt
+- Blaetter zum Nachtragen und fuer Einstellungen lassen sich wie ein natives
+  iOS-Sheet nach unten wegziehen, nicht nur ueber den Griff antippen
 
 ## Das Ueberstundenkonto
 
