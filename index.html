@@ -8,6 +8,19 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Stempel">
 <meta name="theme-color" content="#E9EBEE">
+<script>
+(function () {
+  try {
+    var t = localStorage.getItem('stempel.theme');
+    if (t !== 'hell' && t !== 'dunkel') {
+      t = (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches) ? 'dunkel' : 'hell';
+    }
+    document.documentElement.setAttribute('data-theme', t);
+    var m = document.querySelector('meta[name=theme-color]');
+    if (m) m.setAttribute('content', t === 'dunkel' ? '#15191F' : '#E9EBEE');
+  } catch (e) {}
+})();
+</script>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
 <title>Stempel</title>
@@ -20,6 +33,7 @@
   --grund:#E9EBEE;
   --karte:#FFFFFF;
   --tinte:#17212C;
+  --akzent:#17212C;
   --gedaempft:#6E7B88;
   --linie:#D6DBE0;
   --linie-zart:#E8EBEE;
@@ -31,7 +45,23 @@
   --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
   --unten:calc(env(safe-area-inset-bottom,0px) + 12px);
 }
+:root[data-theme="dunkel"]{
+  --grund:#15191F;
+  --karte:#20262D;
+  --tinte:#EEF1F3;
+  --akzent:#3C4C5C;
+  --gedaempft:#8B97A4;
+  --linie:#2B323A;
+  --linie-zart:#242A31;
+  --lauf:#49B996;
+  --lauf-hell:#173129;
+  --warn:#E27B6C;
+  --warn-hell:#3A211B;
+}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+/* Das hidden-Attribut muss jede display-Regel schlagen, sonst gewinnt
+   z.B. .feld{display:flex} und ein "verstecktes" Feld bleibt sichtbar. */
+[hidden]{display:none !important}
 html,body{margin:0;padding:0}
 body{
   background:var(--grund);
@@ -47,17 +77,19 @@ button{font-family:inherit;font-size:inherit;color:inherit;background:none;borde
 
 /* Kopfzeile mit Monatsnavigation */
 .kopf{
-  display:flex;align-items:baseline;gap:10px;
-  padding:calc(env(safe-area-inset-top,0px) + 18px) 20px 12px;
+  display:grid;grid-template-columns:30px 1fr 30px;align-items:center;gap:6px;
+  padding:calc(env(safe-area-inset-top,0px) + 18px) 14px 12px;
 }
-.monat{font-family:var(--serif);font-size:25px;font-weight:600;letter-spacing:-0.015em;flex:1}
+.monatsnav{display:flex;align-items:center;justify-content:center;gap:6px;min-width:0}
+.monat{font-family:var(--serif);font-size:22px;font-weight:600;letter-spacing:-0.015em;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pfeil{
-  width:34px;height:34px;border-radius:17px;background:var(--karte);
-  display:grid;place-items:center;font-size:17px;color:var(--gedaempft);
-  border:1px solid var(--linie);align-self:center;flex:none;
+  width:30px;height:30px;border-radius:15px;background:var(--karte);
+  display:grid;place-items:center;font-size:16px;color:var(--gedaempft);
+  border:1px solid var(--linie);flex:none;
 }
 .pfeil:active{background:var(--linie-zart)}
-.zahnrad{width:34px;height:34px;display:grid;place-items:center;color:var(--gedaempft);align-self:center;flex:none}
+.iconknopf{width:30px;height:30px;display:grid;place-items:center;color:var(--gedaempft);flex:none}
+.iconknopf:active{opacity:.6}
 
 /* Summenband */
 .summen{
@@ -71,7 +103,7 @@ button{font-family:inherit;font-size:inherit;color:inherit;background:none;borde
 /* Laufender Tag */
 .laeuft{
   margin:0 14px 16px;padding:16px 18px;border-radius:14px;
-  background:var(--tinte);color:#F2F5F7;
+  background:var(--akzent);color:#F2F5F7;
 }
 .laeuft-kopf{display:flex;align-items:center;gap:8px;font-size:13.5px;color:#A7B6C4}
 .puls{width:7px;height:7px;border-radius:4px;background:#5FD1A8;flex:none}
@@ -90,7 +122,7 @@ button{font-family:inherit;font-size:inherit;color:inherit;background:none;borde
   padding:6px 13px;border-radius:18px;font-size:14px;
   background:var(--karte);border:1px solid var(--linie);color:var(--gedaempft);
 }
-.chip.an{background:var(--tinte);border-color:var(--tinte);color:#fff;font-weight:600}
+.chip.an{background:var(--akzent);border-color:var(--akzent);color:#fff;font-weight:600}
 .chip-punkt{width:6px;height:6px;border-radius:3px;background:var(--lauf);flex:none}
 .chip.an .chip-punkt{background:#5FD1A8}
 
@@ -114,12 +146,15 @@ button{font-family:inherit;font-size:inherit;color:inherit;background:none;borde
 .sync-knopf:active{background:var(--linie-zart)}
 .konto-wert{font-family:var(--serif);font-size:38px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1;margin:3px 0 13px}
 .konto-spur{position:relative;height:11px;background:var(--linie-zart);border-radius:6px}
-.konto-fuell{position:absolute;left:0;top:0;bottom:0;background:var(--tinte);border-radius:6px}
+.konto-fuell{position:absolute;left:0;top:0;bottom:0;background:var(--akzent);border-radius:6px}
 .konto-ueber{position:absolute;top:0;bottom:0;background:var(--lauf);border-radius:0 6px 6px 0}
 .konto-grenze{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--gedaempft);opacity:.5;border-radius:1px}
 .konto-fuss{margin-top:10px;font-size:13.5px;color:var(--gedaempft);line-height:1.45}
 .konto-fuss b{color:var(--tinte);font-weight:600}
 .konto-fuss.zahlbar b{color:var(--lauf)}
+.konto-urlaub{margin-top:8px;font-size:13.5px;color:var(--gedaempft);line-height:1.45}
+.konto-urlaub b{color:var(--tinte);font-weight:600}
+.konto-urlaub .ueber{color:var(--warn);font-weight:600}
 
 /* Stempelkarte */
 .karte{background:var(--karte);border-radius:14px;margin:0 14px;overflow:hidden}
@@ -137,7 +172,7 @@ button{font-family:inherit;font-size:inherit;color:inherit;background:none;borde
 
 /* Der Spannbalken: zeigt, wann am Tag gearbeitet wurde */
 .spur{position:relative;height:9px;background:var(--linie-zart);border-radius:5px}
-.balken{position:absolute;top:0;bottom:0;background:var(--tinte);border-radius:5px;min-width:4px}
+.balken{position:absolute;top:0;bottom:0;background:var(--akzent);border-radius:5px;min-width:4px}
 .balken.offen{background:var(--lauf)}
 .marke{position:absolute;top:-3px;bottom:-3px;width:1px;background:var(--linie)}
 .netto{font-family:var(--serif);font-size:17px;font-weight:600;font-variant-numeric:tabular-nums;text-align:right}
@@ -154,7 +189,7 @@ button{font-family:inherit;font-size:inherit;color:inherit;background:none;borde
 }
 .leiste-knoepfe{display:flex;gap:10px;align-items:stretch}
 .stempel{
-  flex:1;height:58px;border-radius:14px;background:var(--tinte);color:#fff;
+  flex:1;height:58px;border-radius:14px;background:var(--akzent);color:#fff;
   font-size:17px;font-weight:600;letter-spacing:.01em;
   display:grid;place-items:center;
 }
@@ -192,11 +227,14 @@ button{font-family:inherit;font-size:inherit;color:inherit;background:none;borde
 .schalter{display:flex;background:var(--linie-zart);border-radius:9px;padding:2px;flex:none}
 .schalter button{padding:5px 13px;border-radius:7px;font-size:14px;color:var(--gedaempft)}
 .schalter button[aria-pressed=true]{background:var(--karte);color:var(--tinte);font-weight:600}
+.feld.feld-block{flex-direction:column;align-items:stretch;gap:8px}
+.feld.feld-block .schalter{align-self:stretch}
+.feld.feld-block .schalter button{flex:1;text-align:center}
 .notiz{font-size:13px;color:var(--gedaempft);margin:-6px 4px 14px;line-height:1.45}
 .notiz.achtung{color:var(--warn)}
 .knopfreihe{display:flex;gap:10px}
 .knopf{flex:1;height:50px;border-radius:12px;display:grid;place-items:center;font-size:16px;font-weight:600}
-.knopf.voll{background:var(--tinte);color:#fff}
+.knopf.voll{background:var(--akzent);color:#fff}
 .knopf.leer{background:var(--karte);border:1px solid var(--linie)}
 .knopf.gefahr{background:var(--karte);border:1px solid var(--warn);color:var(--warn)}
 .knopf:active{opacity:.8}
@@ -206,10 +244,17 @@ button{font-family:inherit;font-size:inherit;color:inherit;background:none;borde
 <body>
 
 <header class="kopf">
-  <button class="pfeil" id="zurueck" aria-label="Voriger Monat">&#8249;</button>
-  <div class="monat" id="monatstitel">&nbsp;</div>
-  <button class="pfeil" id="vor" aria-label="Naechster Monat">&#8250;</button>
-  <button class="zahnrad" id="einstellungen-auf" aria-label="Einstellungen">
+  <button class="iconknopf" id="theme-umschalten" aria-label="Hell- und Dunkelmodus wechseln">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+      <circle cx="12" cy="12" r="4.4"/><path d="M12 2.5v2.6M12 18.9v2.6M21.5 12h-2.6M5.1 12H2.5M18.7 5.3l-1.8 1.8M7.1 16.9l-1.8 1.8M18.7 18.7l-1.8-1.8M7.1 7.1L5.3 5.3"/>
+    </svg>
+  </button>
+  <div class="monatsnav">
+    <button class="pfeil" id="zurueck" aria-label="Voriger Monat">&#8249;</button>
+    <div class="monat" id="monatstitel">&nbsp;</div>
+    <button class="pfeil" id="vor" aria-label="Naechster Monat">&#8250;</button>
+  </div>
+  <button class="iconknopf" id="einstellungen-auf" aria-label="Einstellungen">
     <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
       <circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v2.6M12 18.9v2.6M21.5 12h-2.6M5.1 12H2.5M18.7 5.3l-1.8 1.8M7.1 16.9l-1.8 1.8M18.7 18.7l-1.8-1.8M7.1 7.1L5.3 5.3"/>
     </svg>
@@ -248,8 +293,8 @@ button{font-family:inherit;font-size:inherit;color:inherit;background:none;borde
         <button data-art="urlaub" aria-pressed="false">Urlaub</button>
       </div>
     </div>
-    <div class="feld"><label for="f-datum">Datum</label><input type="date" id="f-datum"></div>
-    <div class="feld" id="zeile-urlaub-bis" hidden><label for="f-urlaub-bis">Bis</label><input type="date" id="f-urlaub-bis"></div>
+    <div class="feld"><label for="f-datum" id="lbl-datum">Datum</label><input type="date" id="f-datum"></div>
+    <div class="feld" id="zeile-urlaub-bis" hidden><label for="f-urlaub-bis">Ende</label><input type="date" id="f-urlaub-bis"></div>
     <div class="feld" id="zeile-von"><label for="f-von">Von</label><input type="time" id="f-von"></div>
     <div class="feld" id="zeile-bis"><label for="f-bis">Bis</label><input type="time" id="f-bis"></div>
     <div class="feld" id="zeile-pausenwahl">
@@ -268,7 +313,7 @@ button{font-family:inherit;font-size:inherit;color:inherit;background:none;borde
     <button class="knopf voll" id="e-speichern">Speichern</button>
   </div>
   <div class="knopfreihe" id="loeschreihe" hidden style="margin-top:10px">
-    <button class="knopf gefahr" id="e-loeschen">Eintrag loeschen</button>
+    <button class="knopf gefahr" id="e-loeschen">Eintrag l&ouml;schen</button>
   </div>
 </div>
 
@@ -280,6 +325,7 @@ button{font-family:inherit;font-size:inherit;color:inherit;background:none;borde
   <div class="feldgruppe">
     <div class="feld"><label for="o-soll">Sollzeit pro Tag</label><input type="time" id="o-soll"></div>
     <div class="feld" id="zeile-vertragsbeginn"><label for="o-vertragsbeginn">Vertragsbeginn</label><input type="date" id="o-vertragsbeginn"></div>
+    <div class="feld" id="zeile-urlaubskontingent"><label for="o-urlaubskontingent">Urlaubstage pro Jahr</label><input type="number" id="o-urlaubskontingent" min="0" max="60" step="1" inputmode="numeric"></div>
     <div class="feld" id="zeile-grenze"><label for="o-grenze">Verg&uuml;tungsgrenze</label><input type="time" id="o-grenze"></div>
     <div class="feld" id="zeile-modus">
       <label>Verg&uuml;tet wird</label>
@@ -298,9 +344,10 @@ button{font-family:inherit;font-size:inherit;color:inherit;background:none;borde
   </div>
   <p class="notiz">Sollzeit <b>00:00</b> bedeutet: kein Soll und kein &Uuml;berstundenkonto. Sinnvoll f&uuml;r Nebent&auml;tigkeiten, bei denen nur die geleisteten Stunden z&auml;hlen.</p>
   <p class="notiz">Vertragsbeginn ist optional. Beginnt der Job mitten in einem Monat, wird das Monatssoll f&uuml;r diesen Monat nur ab diesem Tag berechnet.</p>
+  <p class="notiz">Im Jahr des Vertragsbeginns wird das Urlaubskontingent anteilig ab dem Startmonat berechnet, sp&auml;tere Jahre bekommen das volle Kontingent.</p>
 
   <div class="feldgruppe">
-    <div class="feld" id="zeile-modell">
+    <div class="feld feld-block" id="zeile-modell">
       <label>Soll rechnet nach</label>
       <div class="schalter" id="modellwahl">
         <button data-modell="eintraege" aria-pressed="true">Erfassten Tagen</button>
@@ -330,7 +377,7 @@ button{font-family:inherit;font-size:inherit;color:inherit;background:none;borde
     <button class="knopf voll" id="o-fertig">Fertig</button>
   </div>
   <div class="knopfreihe" style="margin-top:10px">
-    <button class="knopf gefahr" id="o-reset">Alle Daten loeschen</button>
+    <button class="knopf gefahr" id="o-reset">Alle Daten l&ouml;schen</button>
   </div>
 </div>
 
@@ -349,6 +396,20 @@ var Speicher = (function () {
     dauerhaft: echt
   };
 })();
+
+/* ---------- Hell/Dunkel. Wird schon vor diesem Skript im Kopf gesetzt,
+   damit die Seite nicht kurz im falschen Modus aufblitzt. ---------- */
+var THEME_SCHLUESSEL = 'stempel.theme';
+function themeAnwenden(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  var m = document.querySelector('meta[name=theme-color]');
+  if (m) m.setAttribute('content', t === 'dunkel' ? '#15191F' : '#E9EBEE');
+}
+document.getElementById('theme-umschalten').addEventListener('click', function () {
+  var neu = document.documentElement.getAttribute('data-theme') === 'dunkel' ? 'hell' : 'dunkel';
+  Speicher.schreib(THEME_SCHLUESSEL, neu);
+  themeAnwenden(neu);
+});
 
 var SCHLUESSEL = 'stempel.v1';
 var MIN_TAG = 1440;
@@ -373,7 +434,7 @@ var FT = window.Feiertage || {
 /* ---------- Jobs ---------- */
 var JOB_REIHE = ['synera', 'kinelense', 'kiwerkstatt'];
 var JOB_VORGABE = {
-  synera:      { name: 'Synera',       sollMin: 480, grenzeMin: 1200, modus: 'ueberhang', feiertage: true, vertragsbeginn: '2026-09-15' },
+  synera:      { name: 'Synera',       sollMin: 480, grenzeMin: 1200, modus: 'ueberhang', feiertage: true, vertragsbeginn: '2026-09-15', urlaubskontingent: 30 },
   kinelense:   { name: 'Kinelense',    sollMin: 0,   grenzeMin: 0,    modus: 'ueberhang', feiertage: false },
   kiwerkstatt: { name: 'KI-Werkstatt', sollMin: 0,   grenzeMin: 0,    modus: 'ueberhang', feiertage: false }
 };
@@ -539,6 +600,34 @@ function kontoStand(k) {
   return { summe: summe, tage: anzahl, soll: soll, konto: summe - soll };
 }
 
+// Kontingent eines Kalenderjahres. Im Jahr des Vertragsbeginns anteilig
+// ab dem Startmonat (inklusive), volle Jahre danach mit dem ganzen
+// Kontingent. Bruchteile ab einem halben Tag werden aufgerundet (SS5 Abs. 2
+// BUrlG), was Math.round hier automatisch leistet.
+function urlaubskontingentImJahr(k, jahr) {
+  var j = job(k);
+  if (!j.urlaubskontingent) return null;
+  if (!j.vertragsbeginn) return j.urlaubskontingent;
+  var vj = parseInt(j.vertragsbeginn.slice(0, 4), 10);
+  var vm = parseInt(j.vertragsbeginn.slice(5, 7), 10);
+  if (jahr < vj) return null;
+  if (jahr > vj) return j.urlaubskontingent;
+  var monate = 13 - vm;
+  return Math.round(j.urlaubskontingent * monate / 12);
+}
+
+// Verplante Urlaubstage eines Kalenderjahres gegen das (ggf. anteilige)
+// Jahreskontingent. Urlaubseintraege liegen ohnehin nie auf Wochenenden
+// oder (falls beachtet) Feiertagen, siehe urlaubsTage(), zaehlen also
+// automatisch richtig.
+function urlaubstageImJahr(k, jahr) {
+  var kontingent = urlaubskontingentImJahr(k, jahr);
+  if (kontingent === null) return null;
+  var pre = String(jahr);
+  var verplant = eintraegeVon(k).filter(function (e) { return e.art === 'urlaub' && e.date.indexOf(pre) === 0; }).length;
+  return { verplant: verplant, kontingent: kontingent };
+}
+
 /* ---------- Zustand der Ansicht ---------- */
 var jetzt = new Date();
 var blickJahr = jetzt.getFullYear(), blickMonat = jetzt.getMonth();
@@ -641,6 +730,15 @@ function zeichneLauf() {
   if (!ticker) ticker = setInterval(zeichneLauf, 20000);
 }
 
+function urlaubZeileHtml() {
+  var u = urlaubstageImJahr(null, blickJahr);
+  if (!u) return '';
+  var ueber = u.verplant > u.kontingent;
+  return '<div class="konto-urlaub">Urlaub ' + blickJahr + ': <b' + (ueber ? ' class="ueber"' : '') + '>' +
+    u.verplant + '</b> von ' + u.kontingent + ' Tagen verplant' +
+    (ueber ? ', <span class="ueber">' + (u.verplant - u.kontingent) + ' zu viel</span>' : '') + '</div>';
+}
+
 function zeichneKonto() {
   var el = document.getElementById('konto-karte');
   var st = kontoStand();
@@ -649,7 +747,8 @@ function zeichneKonto() {
     el.innerHTML =
       '<div class="konto-kopf"><span>Erfasste Stunden</span>' + syncKnopfHtml() + '</div>' +
       '<div class="konto-wert zahl">' + hhmm(st.summe) + '</div>' +
-      '<div class="konto-fuss">An ' + st.tage + ' Tagen erfasst. F\u00fcr diesen Job ist keine Sollzeit hinterlegt, es gibt also kein \u00dcberstundenkonto.</div>';
+      '<div class="konto-fuss">An ' + st.tage + ' Tagen erfasst. F\u00fcr diesen Job ist keine Sollzeit hinterlegt, es gibt also kein \u00dcberstundenkonto.</div>' +
+      urlaubZeileHtml();
     hefteSyncKnopf();
     return;
   }
@@ -679,7 +778,8 @@ function zeichneKonto() {
       (k > g ? '<span class="konto-ueber" style="left:' + ((g / max) * 100).toFixed(2) + '%;width:' + (((k - g) / max) * 100).toFixed(2) + '%"></span>' : '') +
       '<span class="konto-grenze" style="left:' + ((g / max) * 100).toFixed(2) + '%"></span>' +
     '</div>' +
-    '<div class="konto-fuss' + (zahlbar ? ' zahlbar' : '') + '">' + fuss + '</div>';
+    '<div class="konto-fuss' + (zahlbar ? ' zahlbar' : '') + '">' + fuss + '</div>' +
+    urlaubZeileHtml();
   hefteSyncKnopf();
 }
 
@@ -868,23 +968,36 @@ function urlaubsTage(von, bis) {
 }
 
 var eintragArt = 'arbeit';
+var urlaubBisAngefasst = false;
 function setzeEintragArt(a) {
   eintragArt = a;
   Array.prototype.forEach.call(document.querySelectorAll('#artwahl button'), function (b) {
     b.setAttribute('aria-pressed', String(b.dataset.art === a));
   });
   var urlaub = a === 'urlaub';
+  if (urlaub) urlaubBisAngefasst = false;
+  document.getElementById('lbl-datum').textContent = urlaub ? 'Start' : 'Datum';
   document.getElementById('zeile-von').hidden = urlaub;
   document.getElementById('zeile-bis').hidden = urlaub;
   document.getElementById('zeile-pausenwahl').hidden = urlaub;
-  document.getElementById('zeile-urlaub-bis').hidden = !urlaub || !!bearbeitetId;
+  document.getElementById('zeile-urlaub-bis').hidden = !urlaub;
   document.getElementById('pause-hand').hidden = urlaub || pausenModus !== 'hand';
   vorschau();
 }
 Array.prototype.forEach.call(document.querySelectorAll('#artwahl button'), function (b) {
   b.addEventListener('click', function () { setzeEintragArt(b.dataset.art); });
 });
-document.getElementById('f-urlaub-bis').addEventListener('input', vorschau);
+// Solange die Nutzerin das Enddatum nicht selbst angefasst hat, folgt es dem Start.
+// Das ergibt fuer einen einzelnen freien Tag automatisch Start = Ende.
+document.getElementById('f-datum').addEventListener('input', function () {
+  if (eintragArt === 'urlaub' && !urlaubBisAngefasst) {
+    document.getElementById('f-urlaub-bis').value = this.value;
+  }
+});
+document.getElementById('f-urlaub-bis').addEventListener('input', function () {
+  urlaubBisAngefasst = true;
+  vorschau();
+});
 
 document.getElementById('nachtrag').addEventListener('click', function () { blattEintragOeffnen(null); });
 
@@ -895,7 +1008,7 @@ function blattEintragOeffnen(id) {
   document.getElementById('blatt-titel').textContent = (e ? 'Zeit bearbeiten' : 'Zeit nachtragen') + ' \u2014 ' + job().name;
   document.getElementById('loeschreihe').hidden = !e;
   document.getElementById('f-datum').value = e ? e.date : heuteISO();
-  document.getElementById('f-urlaub-bis').value = '';
+  document.getElementById('f-urlaub-bis').value = e ? e.date : heuteISO();
   document.getElementById('f-von').value = istUrlaub ? '08:00' : (e ? hhmm(e.startMin) : '08:00');
   document.getElementById('f-bis').value = istUrlaub ? '17:00' : (e ? hhmm(e.endMin) : '17:00');
   document.getElementById('f-notiz').value = e ? (e.notiz || '') : '';
@@ -916,11 +1029,11 @@ function vorschau() {
   var p = document.getElementById('vorschau');
   if (eintragArt === 'urlaub') {
     var vd = document.getElementById('f-datum').value;
-    var bd = bearbeitetId ? vd : (document.getElementById('f-urlaub-bis').value || vd);
+    var bd = document.getElementById('f-urlaub-bis').value || vd;
     if (!vd) { p.textContent = '\u00a0'; p.className = 'notiz'; return; }
     var tage = urlaubsTage(vd, bd);
     p.textContent = tage.length
-      ? (tage.length === 1 ? '1 Tag' : tage.length + ' Tage') + ' werden als Urlaub markiert. Wochenenden' +
+      ? (tage.length === 1 ? '1 Tag wird' : tage.length + ' Tage werden') + ' als Urlaub markiert. Wochenenden' +
         (job().feiertage ? ' und Feiertage' : '') + ' z\u00e4hlen nicht mit, dort musst du nicht stempeln.'
       : 'Der gew\u00e4hlte Zeitraum enth\u00e4lt keinen Arbeitstag.';
     p.className = 'notiz';
@@ -954,26 +1067,24 @@ document.getElementById('e-speichern').addEventListener('click', function () {
   if (!datum) { alert('Datum wird gebraucht.'); return; }
 
   if (eintragArt === 'urlaub') {
-    var bis = bearbeitetId ? datum : (document.getElementById('f-urlaub-bis').value || datum);
+    var bis = document.getElementById('f-urlaub-bis').value || datum;
     var notiz = document.getElementById('f-notiz').value.trim();
+    var tage = urlaubsTage(datum, bis);
+    if (!tage.length) { alert('Der gew\u00e4hlte Zeitraum enth\u00e4lt keinen Arbeitstag.'); return; }
+    // Beim Bearbeiten wird der alte Eintrag ersetzt, damit sich ein einzelner
+    // Urlaubstag beim Aendern des Enddatums auch zu einem Zeitraum ausdehnen laesst.
     if (bearbeitetId) {
-      var i = S.eintraege.findIndex(function (x) { return x.id === bearbeitetId; });
-      if (i >= 0) S.eintraege[i] = Object.assign({}, S.eintraege[i], {
-        date: datum, art: 'urlaub', notiz: notiz, startMin: null, endMin: null, pauseAuto: true, pauseMin: null
-      });
-    } else {
-      var tage = urlaubsTage(datum, bis);
-      if (!tage.length) { alert('Der gew\u00e4hlte Zeitraum enth\u00e4lt keinen Arbeitstag.'); return; }
-      var belegteTage = eintraegeVon().map(function (x) { return x.date; });
-      tage.forEach(function (iso) {
-        if (belegteTage.indexOf(iso) >= 0) return;
-        S.eintraege.push({
-          id: neueId(), job: S.aktuell, date: iso, art: 'urlaub',
-          startMin: null, endMin: null, pauseAuto: true, pauseMin: null,
-          notiz: notiz, quelle: 'manuell'
-        });
-      });
+      S.eintraege = S.eintraege.filter(function (x) { return x.id !== bearbeitetId; });
     }
+    var belegteTage = eintraegeVon().map(function (x) { return x.date; });
+    tage.forEach(function (iso) {
+      if (belegteTage.indexOf(iso) >= 0) return;
+      S.eintraege.push({
+        id: neueId(), job: S.aktuell, date: iso, art: 'urlaub',
+        startMin: null, endMin: null, pauseAuto: true, pauseMin: null,
+        notiz: notiz, quelle: 'manuell'
+      });
+    });
     sichern();
     var du = datumAus(datum);
     blickJahr = du.getFullYear(); blickMonat = du.getMonth();
@@ -1069,6 +1180,8 @@ document.getElementById('einstellungen-auf').addEventListener('click', function 
   document.getElementById('o-soll').value = hhmm(j.sollMin);
   document.getElementById('o-vertragsbeginn').value = j.vertragsbeginn || '';
   document.getElementById('zeile-vertragsbeginn').hidden = !j.sollMin;
+  document.getElementById('o-urlaubskontingent').value = j.urlaubskontingent || '';
+  document.getElementById('zeile-urlaubskontingent').hidden = !j.sollMin;
   document.getElementById('o-grenze').value = hhmm(j.grenzeMin);
   document.getElementById('zeile-grenze').hidden = !j.sollMin;
   document.getElementById('zeile-modus').hidden = !j.sollMin;
@@ -1099,6 +1212,7 @@ document.getElementById('o-soll').addEventListener('change', function () {
   if (m === null) return;
   job().sollMin = m;
   document.getElementById('zeile-vertragsbeginn').hidden = !m;
+  document.getElementById('zeile-urlaubskontingent').hidden = !m;
   document.getElementById('zeile-grenze').hidden = !m;
   document.getElementById('zeile-modus').hidden = !m;
   document.getElementById('zeile-modell').hidden = !m;
@@ -1107,6 +1221,11 @@ document.getElementById('o-soll').addEventListener('change', function () {
 });
 document.getElementById('o-vertragsbeginn').addEventListener('change', function () {
   job().vertragsbeginn = this.value || null;
+  sichern(); zeichne();
+});
+document.getElementById('o-urlaubskontingent').addEventListener('change', function () {
+  var n = parseInt(this.value, 10);
+  job().urlaubskontingent = Number.isFinite(n) && n > 0 ? n : null;
   sichern(); zeichne();
 });
 document.getElementById('o-grenze').addEventListener('change', function () {

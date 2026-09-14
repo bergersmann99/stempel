@@ -10,8 +10,10 @@ und synchronisiert in eine Google-Tabelle in deinem Drive.
   30 Minuten ab, mehr als 9 Stunden ziehen 45 Minuten ab
 - Pause pro Tag auch von Hand setzbar
 - Zeiten nachtragen, korrigieren, loeschen
-- **Urlaub eintragen**, auch fuer mehrere Tage am Stueck, ohne dafuer zu stempeln
+- **Urlaub eintragen**, immer als ganze Tage mit Start und Ende, ohne dafuer zu stempeln
+- **Urlaubskontingent** je Job mit Zaehler, wie viele Tage im Jahr schon verplant sind
 - **Vertragsbeginn** je Job, falls er mitten in einem Monat liegt
+- **Hell- und Dunkelmodus**, umschaltbar oben links, merkt sich die Wahl
 - **Ueberstundenkonto** mit der Vertragsgrenze von 20 Stunden
 - **Drei Jobs** mit getrennten Zeiten, Einstellungen und Tabellen
 - **Feiertage des Landes Bremen**, inklusive Monatssoll aus den Arbeitstagen
@@ -60,14 +62,26 @@ einstellbar.
 
 ## Urlaub
 
-Beim Nachtragen laesst sich die Art auf **Urlaub** umschalten. Statt Von und Bis
-gibst du dann nur ein Datum an, optional mit einem zweiten Datum als Ende eines
-Zeitraums. Wochenenden und, sofern fuer den Job aktiv, Feiertage zaehlen dabei
-nicht mit, dort musst du also nichts eintragen.
+Beim Nachtragen laesst sich die Art auf **Urlaub** umschalten. Urlaub ist immer
+ein ganzer Tag, nie eine Uhrzeit: Statt Von, Bis und Pause gibst du **Start** und
+**Ende** an. Fuer einen einzelnen freien Tag traegst du bei beiden dasselbe Datum
+ein, das ist auch voreingestellt, solange du das Ende nicht selbst aenderst.
+Wochenenden und, sofern fuer den Job aktiv, Feiertage zaehlen dabei nicht mit,
+dort musst du also nichts eintragen und sie zaehlen auch nicht als Urlaubstag.
 
 Ein Urlaubstag bleibt fuer das Ueberstundenkonto neutral, egal welches der beiden
 Modelle unter **Soll rechnet nach** eingestellt ist: Er zieht kein Soll ab, traegt
 aber auch keine Arbeitszeit bei. Das gilt genauso fuer die Google-Tabelle.
+
+## Urlaubskontingent
+
+In den Einstellungen laesst sich pro Job ein **Urlaubskontingent** in Tagen pro
+Jahr hinterlegen. Die Konto-Karte zeigt dann eine Zeile wie "Urlaub 2026: 6 von
+30 Tagen verplant", gezaehlt werden alle Urlaubseintraege des jeweils
+angeschauten Kalenderjahres. Im Jahr des Vertragsbeginns wird das Kontingent
+anteilig ab dem Startmonat berechnet (Bruchteile ab einem halben Tag werden nach
+§5 Abs. 2 BUrlG aufgerundet), jedes volle Jahr danach bekommt das ganze
+Kontingent.
 
 ## Vertragsbeginn
 
@@ -76,6 +90,12 @@ ist nur noetig, wenn der Job mitten in einem Monat angefangen hat oder anfaengt.
 Ist ein Datum gesetzt, zaehlt das Monatssoll fuer diesen einen Monat erst ab
 diesem Tag, alle folgenden Monate sind davon unberuehrt. Ohne gesetztes Datum
 aendert sich nichts an der bisherigen Rechnung.
+
+## Hell- und Dunkelmodus
+
+Der Sonnen-Knopf oben links schaltet zwischen Hell und Dunkel um. Ohne eigene
+Wahl richtet sich die App nach der Systemeinstellung des Geraets, einmal
+getippt bleibt die Wahl dauerhaft gespeichert, auch offline.
 
 ## Jobs
 
