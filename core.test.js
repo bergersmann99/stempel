@@ -70,5 +70,13 @@ eq(c.kontoStand(t3, 480), 0, 'geteilter Tag 4h + 4h -> Konto 0');
 // Ein Halbtag zieht das Konto ins Minus
 eq(c.kontoStand([tag('2026-02-03', 480, 720)], 480), -240, 'nur 4 Stunden -> minus 4:00');
 
+// --- Urlaub ---
+function urlaub(d) { return { id: d, date: d, art: 'urlaub' }; }
+eq(c.netto(urlaub('2026-03-02')), 0, 'Urlaubstag hat 0 Minuten netto');
+eq(c.kontoStand([urlaub('2026-03-02')], 480), 0, 'ein einzelner Urlaubstag bleibt neutral, kein Minus');
+// Vier Arbeitstage a 8:30 plus ein Urlaubstag -> Urlaubstag zaehlt nicht mit
+var t4 = [tag('2026-03-02', 480, 1020), tag('2026-03-03', 480, 1020), tag('2026-03-04', 480, 1020), tag('2026-03-05', 480, 1020), urlaub('2026-03-06')];
+eq(c.kontoStand(t4, 480), 120, '4 Tage a 8:30 plus 1 Urlaubstag -> +2:00, Urlaub bleibt aussen vor');
+
 console.log(fails === 0 ? '\nAlle Tests bestanden.' : '\n' + fails + ' Test(s) fehlgeschlagen.');
 process.exit(fails === 0 ? 0 : 1);

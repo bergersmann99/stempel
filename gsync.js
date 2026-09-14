@@ -204,25 +204,27 @@ window.GSync = (function () {
   function baueZeilen(ctx, jahr) {
     var liste = ctx.eintraege
       .filter(function (e) { return e.date.indexOf(jahr) === 0; })
-      .sort(function (a, b) { return a.date === b.date ? a.startMin - b.startMin : (a.date < b.date ? -1 : 1); });
+      .sort(function (a, b) { return a.date === b.date ? (a.startMin || 0) - (b.startMin || 0) : (a.date < b.date ? -1 : 1); });
 
     var sollGesetzt = {};
     return liste.map(function (e, i) {
       var zeile = i + 2; // Datenbereich beginnt in Zeile 2
+      var istUrlaub = e.art === 'urlaub';
       var ersterAmTag = !sollGesetzt[e.date];
       sollGesetzt[e.date] = true;
-      var n = ctx.netto(e);
+      var n = istUrlaub ? 0 : ctx.netto(e);
       return [
         e.date,
         ctx.wochentag(e.date),
         ctx.feiertagAm(e.date) || '',
-        ctx.hhmm(e.startMin),
-        ctx.hhmm(e.endMin),
-        ctx.effektivePause(e),
+        istUrlaub ? '' : ctx.hhmm(e.startMin),
+        istUrlaub ? '' : ctx.hhmm(e.endMin),
+        istUrlaub ? '' : ctx.effektivePause(e),
         n / 1440,
-        ctx.sollMin && ersterAmTag ? ctx.sollMin / 1440 : 0,
+        // Ein Urlaubstag zieht kein Soll, er bleibt neutral wie ein Tag ohne Eintrag.
+        ctx.sollMin && ersterAmTag && !istUrlaub ? ctx.sollMin / 1440 : 0,
         ctx.sollMin ? '=G' + zeile + '-H' + zeile : '',
-        e.quelle === 'stempel' ? 'Gestempelt' : 'Nachgetragen',
+        istUrlaub ? 'Urlaub' : (e.quelle === 'stempel' ? 'Gestempelt' : 'Nachgetragen'),
         e.notiz || '',
         e.id
       ];

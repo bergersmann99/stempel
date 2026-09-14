@@ -18,6 +18,7 @@ function brutto(startMin, endMin) {
 }
 
 function netto(entry) {
+  if (entry.art === 'urlaub') return 0;
   const b = brutto(entry.startMin, entry.endMin);
   return Math.max(0, b - effektivePause(entry));
 }
@@ -63,9 +64,13 @@ if (typeof module !== 'undefined') {
 }
 
 // Ueberstundenkonto ueber alle erfassten Tage.
+// Urlaubstage zaehlen nicht als Tag mit Soll, sie bleiben neutral.
 function kontoStand(eintraege, sollMin) {
   var summe = 0, tage = {};
-  eintraege.forEach(function (e) { summe += netto(e); tage[e.date] = 1; });
+  eintraege.forEach(function (e) {
+    summe += netto(e);
+    if (e.art !== 'urlaub') tage[e.date] = 1;
+  });
   return summe - Object.keys(tage).length * sollMin;
 }
 

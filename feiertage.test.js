@@ -36,6 +36,9 @@ eq(F.arbeitstage(2026, 10, true), 22, 'Oktober 2026: beide Feiertage fallen auf 
 eq(F.arbeitstage(2025, 10, true), 21, 'Oktober 2025: 23 Werktage minus zwei Feiertage an Freitagen');
 eq(F.arbeitstage(2026, 9, true), 22, 'September 2026 ohne Feiertage');
 eq(F.arbeitstage(2026, 9, true, 14), 10, 'September 2026 bis zum 14. sind 10 Arbeitstage');
+eq(F.arbeitstage(2026, 9, true, null, 15), 12, 'September 2026 ab dem 15. sind 12 Arbeitstage');
+eq(F.arbeitstage(2026, 9, true, 14, 15), 0, 'vonTag nach bisTag ergibt keine Arbeitstage');
+eq(F.arbeitstage(2026, 9, true) , F.arbeitstage(2026, 9, true, 14) + F.arbeitstage(2026, 9, true, null, 15), 'bis 14. plus ab 15. ergibt den ganzen Monat');
 
 console.log(fails === 0 ? '\nAlle Tests bestanden.' : '\n' + fails + ' Test(s) fehlgeschlagen.');
 process.exit(fails === 0 ? 0 : 1);

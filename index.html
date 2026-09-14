@@ -241,10 +241,18 @@ button{font-family:inherit;font-size:inherit;color:inherit;background:none;borde
   <div class="griff"></div>
   <h2 id="blatt-titel">Zeit nachtragen</h2>
   <div class="feldgruppe">
-    <div class="feld"><label for="f-datum">Datum</label><input type="date" id="f-datum"></div>
-    <div class="feld"><label for="f-von">Von</label><input type="time" id="f-von"></div>
-    <div class="feld"><label for="f-bis">Bis</label><input type="time" id="f-bis"></div>
     <div class="feld">
+      <label>Art</label>
+      <div class="schalter" id="artwahl">
+        <button data-art="arbeit" aria-pressed="true">Arbeit</button>
+        <button data-art="urlaub" aria-pressed="false">Urlaub</button>
+      </div>
+    </div>
+    <div class="feld"><label for="f-datum">Datum</label><input type="date" id="f-datum"></div>
+    <div class="feld" id="zeile-urlaub-bis" hidden><label for="f-urlaub-bis">Bis</label><input type="date" id="f-urlaub-bis"></div>
+    <div class="feld" id="zeile-von"><label for="f-von">Von</label><input type="time" id="f-von"></div>
+    <div class="feld" id="zeile-bis"><label for="f-bis">Bis</label><input type="time" id="f-bis"></div>
+    <div class="feld" id="zeile-pausenwahl">
       <label>Pause</label>
       <div class="schalter" id="pausenwahl">
         <button data-modus="auto" aria-pressed="true">Automatisch</button>
@@ -271,6 +279,7 @@ button{font-family:inherit;font-size:inherit;color:inherit;background:none;borde
   <p class="notiz" style="margin-top:-8px">Die folgenden Werte gelten f&uuml;r <b id="o-jobname">Synera</b>. Jeder Job hat eigene Einstellungen und eine eigene Tabelle.</p>
   <div class="feldgruppe">
     <div class="feld"><label for="o-soll">Sollzeit pro Tag</label><input type="time" id="o-soll"></div>
+    <div class="feld" id="zeile-vertragsbeginn"><label for="o-vertragsbeginn">Vertragsbeginn</label><input type="date" id="o-vertragsbeginn"></div>
     <div class="feld" id="zeile-grenze"><label for="o-grenze">Verg&uuml;tungsgrenze</label><input type="time" id="o-grenze"></div>
     <div class="feld" id="zeile-modus">
       <label>Verg&uuml;tet wird</label>
@@ -288,6 +297,7 @@ button{font-family:inherit;font-size:inherit;color:inherit;background:none;borde
     </div>
   </div>
   <p class="notiz">Sollzeit <b>00:00</b> bedeutet: kein Soll und kein &Uuml;berstundenkonto. Sinnvoll f&uuml;r Nebent&auml;tigkeiten, bei denen nur die geleisteten Stunden z&auml;hlen.</p>
+  <p class="notiz">Vertragsbeginn ist optional. Beginnt der Job mitten in einem Monat, wird das Monatssoll f&uuml;r diesen Monat nur ab diesem Tag berechnet.</p>
 
   <div class="feldgruppe">
     <div class="feld" id="zeile-modell">
@@ -347,9 +357,12 @@ var MIN_TAG = 1440;
 var FT = window.Feiertage || {
   feiertagAm: function () { return null; },
   imMonat: function () { return []; },
-  arbeitstage: function (j, m) {
-    var letzter = new Date(Date.UTC(j, m, 0)).getUTCDate(), n = 0;
-    for (var t = 1; t <= letzter; t++) {
+  arbeitstage: function (j, m, mitFeiertagen, bisTag, vonTag) {
+    var letzter = new Date(Date.UTC(j, m, 0)).getUTCDate();
+    var start = vonTag ? Math.max(1, vonTag) : 1;
+    var ende = bisTag ? Math.min(bisTag, letzter) : letzter;
+    var n = 0;
+    for (var t = start; t <= ende; t++) {
       var wt = new Date(Date.UTC(j, m - 1, t)).getUTCDay();
       if (wt !== 0 && wt !== 6) n++;
     }
@@ -360,7 +373,7 @@ var FT = window.Feiertage || {
 /* ---------- Jobs ---------- */
 var JOB_REIHE = ['synera', 'kinelense', 'kiwerkstatt'];
 var JOB_VORGABE = {
-  synera:      { name: 'Synera',       sollMin: 480, grenzeMin: 1200, modus: 'ueberhang', feiertage: true },
+  synera:      { name: 'Synera',       sollMin: 480, grenzeMin: 1200, modus: 'ueberhang', feiertage: true, vertragsbeginn: '2026-09-15' },
   kinelense:   { name: 'Kinelense',    sollMin: 0,   grenzeMin: 0,    modus: 'ueberhang', feiertage: false },
   kiwerkstatt: { name: 'KI-Werkstatt', sollMin: 0,   grenzeMin: 0,    modus: 'ueberhang', feiertage: false }
 };
@@ -436,7 +449,7 @@ function effektivePause(e) {
   if (e.pauseAuto === false && Number.isFinite(e.pauseMin)) return e.pauseMin;
   return autoPause(brutto(e.startMin, e.endMin));
 }
-function netto(e) { return Math.max(0, brutto(e.startMin, e.endMin) - effektivePause(e)); }
+function netto(e) { if (e.art === 'urlaub') return 0; return Math.max(0, brutto(e.startMin, e.endMin) - effektivePause(e)); }
 function tageDiff(a, b) { return Math.round((Date.parse(b + 'T00:00:00Z') - Date.parse(a + 'T00:00:00Z')) / 86400000); }
 function hinweise(e, vorher) {
   var out = [];
@@ -467,16 +480,34 @@ function datumAus(iso) { return new Date(iso + 'T12:00:00'); }
 function txt(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
 /* ---------- Soll und Konto ---------- */
+// Erster Tag im Monat, ab dem das Soll zaehlt: normalerweise der 1., aber
+// wenn der Vertrag erst mitten im Monat beginnt, erst ab diesem Tag.
+// null bedeutet: der Vertrag hat in diesem Monat noch gar nicht begonnen.
+function vertragsVonTag(j, jahr, monat) {
+  if (!j.vertragsbeginn) return 1;
+  var vj = parseInt(j.vertragsbeginn.slice(0, 4), 10);
+  var vm = parseInt(j.vertragsbeginn.slice(5, 7), 10);
+  var vt = parseInt(j.vertragsbeginn.slice(8, 10), 10);
+  if (vj > jahr || (vj === jahr && vm > monat)) return null;
+  if (vj === jahr && vm === monat) return vt;
+  return 1;
+}
 function monatsSoll(k, jahr, monat) {
   var j = job(k);
   if (!j.sollMin) return null;
-  return FT.arbeitstage(jahr, monat, j.feiertage) * j.sollMin;
+  var von = vertragsVonTag(j, jahr, monat);
+  if (von === null) return 0;
+  return FT.arbeitstage(jahr, monat, j.feiertage, null, von) * j.sollMin;
 }
 function arbeitstageIm(k, jahr, monat) {
-  return FT.arbeitstage(jahr, monat, job(k).feiertage);
+  var j = job(k);
+  var von = vertragsVonTag(j, jahr, monat);
+  if (von === null) return 0;
+  return FT.arbeitstage(jahr, monat, j.feiertage, null, von);
 }
 
 // Soll vom ersten Eintrag bis heute, gerechnet ueber die Arbeitstage des Kalenders.
+// Urlaubstage werden abgezogen, sie bleiben neutral wie im Modell "Erfasste Tage".
 function sollNachArbeitstagen(k) {
   var j = job(k), liste = eintraegeVon(k);
   if (!liste.length || !j.sollMin) return 0;
@@ -486,9 +517,12 @@ function sollNachArbeitstagen(k) {
   var soll = 0, schutz = 0;
   while ((jj < hj || (jj === hj && mm <= hm)) && schutz++ < 600) {
     var bis = (jj === hj && mm === hm) ? heute.getDate() : null;
-    soll += FT.arbeitstage(jj, mm, j.feiertage, bis) * j.sollMin;
+    var von = vertragsVonTag(j, jj, mm);
+    if (von !== null) soll += FT.arbeitstage(jj, mm, j.feiertage, bis, von) * j.sollMin;
     mm++; if (mm > 12) { mm = 1; jj++; }
   }
+  var urlaubstage = liste.filter(function (e) { return e.art === 'urlaub' && e.date <= heuteISO(); }).length;
+  soll -= urlaubstage * j.sollMin;
   return soll;
 }
 
@@ -496,7 +530,7 @@ function kontoStand(k) {
   k = k || S.aktuell;
   var j = job(k), liste = eintraegeVon(k);
   var summe = 0, tage = {};
-  liste.forEach(function (e) { summe += netto(e); tage[e.date] = 1; });
+  liste.forEach(function (e) { summe += netto(e); if (e.art !== 'urlaub') tage[e.date] = 1; });
   var anzahl = Object.keys(tage).length;
   if (!j.sollMin) return { summe: summe, tage: anzahl, konto: null };
   var soll = S.optionen.kontoModell === 'arbeitstage'
@@ -516,7 +550,7 @@ var syncLaeuft = false;
 function monatsEintraege() {
   var pre = blickJahr + '-' + String(blickMonat + 1).padStart(2, '0');
   return eintraegeVon().filter(function (e) { return e.date.indexOf(pre) === 0; })
-    .sort(function (a, b) { return a.date === b.date ? b.startMin - a.startMin : (a.date < b.date ? 1 : -1); });
+    .sort(function (a, b) { return a.date === b.date ? (b.startMin || 0) - (a.startMin || 0) : (a.date < b.date ? 1 : -1); });
 }
 
 /* ---------- Zeichnen ---------- */
@@ -683,6 +717,7 @@ function zeichneKarte(liste) {
 
   var von = 360, bis = 1200;
   liste.forEach(function (e) {
+    if (e.art === 'urlaub') return;
     von = Math.min(von, e.startMin);
     bis = Math.max(bis, e.startMin + brutto(e.startMin, e.endMin));
   });
@@ -727,6 +762,10 @@ function freiZeileHtml(iso, name, zeigeDatum) {
 }
 
 function zeileHtml(e, von, spanne, zeigeDatum, istOffen) {
+  if (e.art === 'urlaub') {
+    return '<button class="zeile freizeile" data-id="' + e.id + '">' + tagZelle(e.date, zeigeDatum) +
+      '<span class="frei">Urlaub' + (e.notiz ? ' – ' + txt(e.notiz) : '') + '</span><span class="netto">frei</span></button>';
+  }
   var d = datumAus(e.date);
   var we = d.getDay() === 0 || d.getDay() === 6;
   var feiertag = job().feiertage && FT.feiertagAm(e.date);
@@ -734,7 +773,7 @@ function zeileHtml(e, von, spanne, zeigeDatum, istOffen) {
   var links = ((e.startMin - von) / spanne) * 100;
   var breite = (b / spanne) * 100;
   var vorher = istOffen ? null : S.eintraege.filter(function (x) {
-    return x.job === S.aktuell && x.id !== e.id && x.date < e.date;
+    return x.job === S.aktuell && x.id !== e.id && x.date < e.date && x.art !== 'urlaub';
   }).sort(function (p, q) { return p.date < q.date ? 1 : -1; })[0] || null;
   var warnungen = istOffen ? [] : hinweise(e, vorher);
 
@@ -752,7 +791,7 @@ function zeileHtml(e, von, spanne, zeigeDatum, istOffen) {
 /* ---------- Stempeln ---------- */
 function neueId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 function letzterVor(e) {
-  return S.eintraege.filter(function (x) { return x.job === e.job && x.id !== e.id && x.date < e.date; })
+  return S.eintraege.filter(function (x) { return x.job === e.job && x.id !== e.id && x.date < e.date && x.art !== 'urlaub'; })
     .sort(function (a, b) { return a.date < b.date ? 1 : -1; })[0] || null;
 }
 
@@ -806,26 +845,63 @@ function setzePausenModus(m) {
   Array.prototype.forEach.call(document.querySelectorAll('#pausenwahl button'), function (b) {
     b.setAttribute('aria-pressed', String(b.dataset.modus === m));
   });
-  document.getElementById('pause-hand').hidden = (m !== 'hand');
+  document.getElementById('pause-hand').hidden = (m !== 'hand' || eintragArt === 'urlaub');
   vorschau();
 }
 Array.prototype.forEach.call(document.querySelectorAll('#pausenwahl button'), function (b) {
   b.addEventListener('click', function () { setzePausenModus(b.dataset.modus); });
 });
 
+// Werktage (kein Wochenende, bei Bedarf kein Feiertag) zwischen zwei Daten, jeweils inklusive.
+function urlaubsTage(von, bis) {
+  var start = datumAus(von), ende = datumAus(bis);
+  if (ende < start) ende = start;
+  var out = [];
+  for (var d = start; d <= ende; d = new Date(d.getTime() + 86400000)) {
+    var wt = d.getDay();
+    if (wt === 0 || wt === 6) continue;
+    var iso = heuteISO(d);
+    if (job().feiertage && FT.feiertagAm(iso)) continue;
+    out.push(iso);
+  }
+  return out;
+}
+
+var eintragArt = 'arbeit';
+function setzeEintragArt(a) {
+  eintragArt = a;
+  Array.prototype.forEach.call(document.querySelectorAll('#artwahl button'), function (b) {
+    b.setAttribute('aria-pressed', String(b.dataset.art === a));
+  });
+  var urlaub = a === 'urlaub';
+  document.getElementById('zeile-von').hidden = urlaub;
+  document.getElementById('zeile-bis').hidden = urlaub;
+  document.getElementById('zeile-pausenwahl').hidden = urlaub;
+  document.getElementById('zeile-urlaub-bis').hidden = !urlaub || !!bearbeitetId;
+  document.getElementById('pause-hand').hidden = urlaub || pausenModus !== 'hand';
+  vorschau();
+}
+Array.prototype.forEach.call(document.querySelectorAll('#artwahl button'), function (b) {
+  b.addEventListener('click', function () { setzeEintragArt(b.dataset.art); });
+});
+document.getElementById('f-urlaub-bis').addEventListener('input', vorschau);
+
 document.getElementById('nachtrag').addEventListener('click', function () { blattEintragOeffnen(null); });
 
 function blattEintragOeffnen(id) {
   bearbeitetId = id;
   var e = id ? S.eintraege.find(function (x) { return x.id === id; }) : null;
+  var istUrlaub = e && e.art === 'urlaub';
   document.getElementById('blatt-titel').textContent = (e ? 'Zeit bearbeiten' : 'Zeit nachtragen') + ' \u2014 ' + job().name;
   document.getElementById('loeschreihe').hidden = !e;
   document.getElementById('f-datum').value = e ? e.date : heuteISO();
-  document.getElementById('f-von').value = e ? hhmm(e.startMin) : '08:00';
-  document.getElementById('f-bis').value = e ? hhmm(e.endMin) : '17:00';
+  document.getElementById('f-urlaub-bis').value = '';
+  document.getElementById('f-von').value = istUrlaub ? '08:00' : (e ? hhmm(e.startMin) : '08:00');
+  document.getElementById('f-bis').value = istUrlaub ? '17:00' : (e ? hhmm(e.endMin) : '17:00');
   document.getElementById('f-notiz').value = e ? (e.notiz || '') : '';
   document.getElementById('f-pause').value = e && e.pauseAuto === false ? e.pauseMin : 30;
   setzePausenModus(e && e.pauseAuto === false ? 'hand' : 'auto');
+  setzeEintragArt(istUrlaub ? 'urlaub' : 'arbeit');
   blattAuf('blatt-eintrag');
 }
 
@@ -837,8 +913,20 @@ function feldMinuten(id) {
 }
 
 function vorschau() {
-  var s = feldMinuten('f-von'), en = feldMinuten('f-bis');
   var p = document.getElementById('vorschau');
+  if (eintragArt === 'urlaub') {
+    var vd = document.getElementById('f-datum').value;
+    var bd = bearbeitetId ? vd : (document.getElementById('f-urlaub-bis').value || vd);
+    if (!vd) { p.textContent = '\u00a0'; p.className = 'notiz'; return; }
+    var tage = urlaubsTage(vd, bd);
+    p.textContent = tage.length
+      ? (tage.length === 1 ? '1 Tag' : tage.length + ' Tage') + ' werden als Urlaub markiert. Wochenenden' +
+        (job().feiertage ? ' und Feiertage' : '') + ' z\u00e4hlen nicht mit, dort musst du nicht stempeln.'
+      : 'Der gew\u00e4hlte Zeitraum enth\u00e4lt keinen Arbeitstag.';
+    p.className = 'notiz';
+    return;
+  }
+  var s = feldMinuten('f-von'), en = feldMinuten('f-bis');
   if (s === null || en === null) { p.textContent = '\u00a0'; p.className = 'notiz'; return; }
   var b = brutto(s, en);
   var pause = pausenModus === 'hand'
@@ -863,21 +951,51 @@ document.getElementById('e-abbrechen').addEventListener('click', blattZu);
 
 document.getElementById('e-speichern').addEventListener('click', function () {
   var datum = document.getElementById('f-datum').value;
+  if (!datum) { alert('Datum wird gebraucht.'); return; }
+
+  if (eintragArt === 'urlaub') {
+    var bis = bearbeitetId ? datum : (document.getElementById('f-urlaub-bis').value || datum);
+    var notiz = document.getElementById('f-notiz').value.trim();
+    if (bearbeitetId) {
+      var i = S.eintraege.findIndex(function (x) { return x.id === bearbeitetId; });
+      if (i >= 0) S.eintraege[i] = Object.assign({}, S.eintraege[i], {
+        date: datum, art: 'urlaub', notiz: notiz, startMin: null, endMin: null, pauseAuto: true, pauseMin: null
+      });
+    } else {
+      var tage = urlaubsTage(datum, bis);
+      if (!tage.length) { alert('Der gew\u00e4hlte Zeitraum enth\u00e4lt keinen Arbeitstag.'); return; }
+      var belegteTage = eintraegeVon().map(function (x) { return x.date; });
+      tage.forEach(function (iso) {
+        if (belegteTage.indexOf(iso) >= 0) return;
+        S.eintraege.push({
+          id: neueId(), job: S.aktuell, date: iso, art: 'urlaub',
+          startMin: null, endMin: null, pauseAuto: true, pauseMin: null,
+          notiz: notiz, quelle: 'manuell'
+        });
+      });
+    }
+    sichern();
+    var du = datumAus(datum);
+    blickJahr = du.getFullYear(); blickMonat = du.getMonth();
+    blattZu(); zeichne(); syncStill();
+    return;
+  }
+
   var s = feldMinuten('f-von'), en = feldMinuten('f-bis');
-  if (!datum || s === null || en === null) { alert('Datum, Von und Bis werden gebraucht.'); return; }
+  if (s === null || en === null) { alert('Von und Bis werden gebraucht.'); return; }
   if (brutto(s, en) < 1) { alert('Von und Bis d\u00fcrfen nicht gleich sein.'); return; }
   var handPause = Math.max(0, parseInt(document.getElementById('f-pause').value || '0', 10));
   if (pausenModus === 'hand' && handPause >= brutto(s, en)) { alert('Die Pause ist l\u00e4nger als die Anwesenheit.'); return; }
 
   var felder = {
-    date: datum, startMin: s, endMin: en,
+    date: datum, art: 'arbeit', startMin: s, endMin: en,
     pauseAuto: pausenModus === 'auto',
     pauseMin: pausenModus === 'hand' ? handPause : null,
     notiz: document.getElementById('f-notiz').value.trim()
   };
   if (bearbeitetId) {
-    var i = S.eintraege.findIndex(function (x) { return x.id === bearbeitetId; });
-    if (i >= 0) S.eintraege[i] = Object.assign({}, S.eintraege[i], felder);
+    var j = S.eintraege.findIndex(function (x) { return x.id === bearbeitetId; });
+    if (j >= 0) S.eintraege[j] = Object.assign({}, S.eintraege[j], felder);
   } else {
     S.eintraege.push(Object.assign({ id: neueId(), job: S.aktuell, quelle: 'manuell' }, felder));
   }
@@ -910,7 +1028,10 @@ function syncKontext(k) {
     hhmm: hhmm,
     wochentag: function (iso) { return WOCHENTAGE[datumAus(iso).getDay()]; },
     feiertagAm: function (iso) { return j.feiertage ? FT.feiertagAm(iso) : null; },
-    arbeitstage: function (jahr, monat) { return FT.arbeitstage(jahr, monat, j.feiertage); },
+    arbeitstage: function (jahr, monat) {
+      var von = vertragsVonTag(j, jahr, monat);
+      return von === null ? 0 : FT.arbeitstage(jahr, monat, j.feiertage, null, von);
+    },
     zeitstempel: new Date().toLocaleString('de-DE')
   };
 }
@@ -946,6 +1067,8 @@ document.getElementById('einstellungen-auf').addEventListener('click', function 
   var j = job();
   document.getElementById('o-jobname').textContent = j.name;
   document.getElementById('o-soll').value = hhmm(j.sollMin);
+  document.getElementById('o-vertragsbeginn').value = j.vertragsbeginn || '';
+  document.getElementById('zeile-vertragsbeginn').hidden = !j.sollMin;
   document.getElementById('o-grenze').value = hhmm(j.grenzeMin);
   document.getElementById('zeile-grenze').hidden = !j.sollMin;
   document.getElementById('zeile-modus').hidden = !j.sollMin;
@@ -975,10 +1098,15 @@ document.getElementById('o-soll').addEventListener('change', function () {
   var m = feldMinuten('o-soll');
   if (m === null) return;
   job().sollMin = m;
+  document.getElementById('zeile-vertragsbeginn').hidden = !m;
   document.getElementById('zeile-grenze').hidden = !m;
   document.getElementById('zeile-modus').hidden = !m;
   document.getElementById('zeile-modell').hidden = !m;
   document.getElementById('zeile-at').hidden = !m;
+  sichern(); zeichne();
+});
+document.getElementById('o-vertragsbeginn').addEventListener('change', function () {
+  job().vertragsbeginn = this.value || null;
   sichern(); zeichne();
 });
 document.getElementById('o-grenze').addEventListener('change', function () {
@@ -1024,19 +1152,20 @@ function csvText() {
   var zeilen = ['Job;Datum;Wochentag;Feiertag;Von;Bis;Pause_Min;Arbeitszeit;Stunden_dezimal;Quelle;Notiz'];
   S.eintraege.slice().sort(function (a, b) {
     if (a.job !== b.job) return a.job < b.job ? -1 : 1;
-    return a.date === b.date ? a.startMin - b.startMin : (a.date < b.date ? -1 : 1);
+    return a.date === b.date ? (a.startMin || 0) - (b.startMin || 0) : (a.date < b.date ? -1 : 1);
   }).forEach(function (e) {
+    var istUrlaub = e.art === 'urlaub';
     var n = netto(e);
     zeilen.push([
       S.jobs[e.job] ? S.jobs[e.job].name : e.job,
       e.date,
       WOCHENTAGE[datumAus(e.date).getDay()],
       (S.jobs[e.job] && S.jobs[e.job].feiertage && FT.feiertagAm(e.date)) || '',
-      hhmm(e.startMin), hhmm(e.endMin),
-      effektivePause(e),
-      hhmm(n),
-      (n / 60).toFixed(2).replace('.', ','),
-      e.quelle === 'stempel' ? 'Gestempelt' : 'Nachgetragen',
+      istUrlaub ? '' : hhmm(e.startMin), istUrlaub ? '' : hhmm(e.endMin),
+      istUrlaub ? '' : effektivePause(e),
+      istUrlaub ? 'Urlaub' : hhmm(n),
+      istUrlaub ? '' : (n / 60).toFixed(2).replace('.', ','),
+      istUrlaub ? 'Urlaub' : (e.quelle === 'stempel' ? 'Gestempelt' : 'Nachgetragen'),
       (e.notiz || '').replace(/[;\r\n]/g, ' ')
     ].join(';'));
   });

@@ -56,5 +56,17 @@ eq(G._baueZeilen(ohne, '2026')[0][7], 0, 'ohne Sollzeit steht im Soll eine Null'
 eq(G._baueZeilen(ohne, '2026')[0][8], '', 'ohne Sollzeit bleibt der Saldo leer');
 eq(G._baueZeilen(ctx, '2026')[0][8], '=G2-H2', 'mit Sollzeit steht die Saldoformel');
 
+// Urlaubstag: kein Soll, keine Zeiten, aber ohne Fehler
+const mitUrlaub = Object.assign({}, ctx, {
+  eintraege: ctx.eintraege.concat([{ id: 'u1', date: '2026-09-20', art: 'urlaub', notiz: '', quelle: 'manuell' }])
+});
+const zu = G._baueZeilen(mitUrlaub, '2026');
+const urlaubZeile = zu.find(function (r) { return r[0] === '2026-09-20'; });
+eq(urlaubZeile[3], '', 'Urlaubstag hat kein Von');
+eq(urlaubZeile[4], '', 'Urlaubstag hat kein Bis');
+eq(urlaubZeile[6], 0, 'Urlaubstag traegt 0 Arbeitszeit');
+eq(urlaubZeile[7], 0, 'Urlaubstag traegt kein Soll');
+eq(urlaubZeile[9], 'Urlaub', 'Quelle zeigt Urlaub');
+
 console.log(fails === 0 ? '\nAlle Tests bestanden.' : '\n' + fails + ' Test(s) fehlgeschlagen.');
 process.exit(fails === 0 ? 0 : 1);

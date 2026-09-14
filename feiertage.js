@@ -67,15 +67,17 @@
 
   // Arbeitstage: Montag bis Freitag ohne Feiertage.
   // bisTag begrenzt optional auf einen Tag im Monat, fuer den laufenden Monat.
-  function arbeitstage(jahr, monat, mitFeiertagen, bisTag) {
+  // vonTag begrenzt optional den Anfang, etwa wenn ein Vertrag erst mitten im Monat beginnt.
+  function arbeitstage(jahr, monat, mitFeiertagen, bisTag, vonTag) {
     var letzter = new Date(Date.UTC(jahr, monat, 0)).getUTCDate();
+    var start = vonTag ? Math.max(1, vonTag) : 1;
     var ende = bisTag ? Math.min(bisTag, letzter) : letzter;
     var frei = {};
     if (mitFeiertagen !== false) {
       imMonat(jahr, monat).forEach(function (f) { frei[f.datum] = 1; });
     }
     var n = 0;
-    for (var t = 1; t <= ende; t++) {
+    for (var t = start; t <= ende; t++) {
       var d = new Date(Date.UTC(jahr, monat - 1, t));
       var wt = d.getUTCDay();
       if (wt === 0 || wt === 6) continue;
