@@ -15,7 +15,7 @@
 
 window.STEMPEL_CONFIG = {
   // Aus der Google Cloud Console, endet auf .apps.googleusercontent.com
-  googleClientId: '',
+  googleClientId: '413866485945-74prclo8p2354ht0qr8nqff874tkqcrh.apps.googleusercontent.com',
 
   // Name der Tabelle, die die App in deinem Drive anlegt
   dateiName: 'Arbeitszeiten'
