@@ -9,7 +9,8 @@ und synchronisiert in eine Google-Tabelle in deinem Drive.
 - Pausenabzug pauschal nach ArbZG §4: mehr als 6 Stunden Anwesenheit ziehen
   30 Minuten ab, mehr als 9 Stunden ziehen 45 Minuten ab
 - Pause pro Tag auch von Hand setzbar
-- Zeiten nachtragen, korrigieren, loeschen
+- Zeiten nachtragen, korrigieren, mit Wisch-nach-links loeschen wie in Mail
+- Warnung, bevor sich zwei Zeiten am selben Tag ueberschneiden
 - **Urlaub eintragen**, immer als ganze Tage mit Start und Ende, ohne dafuer zu stempeln
 - **Urlaubskontingent** je Job mit Zaehler, wie viele Tage im Jahr schon verplant sind
 - **Vertragsbeginn** je Job, falls er mitten in einem Monat liegt

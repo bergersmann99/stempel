@@ -1,7 +1,7 @@
 // Service Worker: haelt die App offline lauffaehig.
 // Nach jeder Aenderung an index.html, config.js oder gsync.js die Version
 // hochzaehlen, sonst bleibt auf dem Geraet die alte Fassung im Cache liegen.
-const CACHE = 'stempel-v7';
+const CACHE = 'stempel-v8';
 const SHELL = [
   './',
   './index.html',

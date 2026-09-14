@@ -161,10 +161,17 @@ button{font-family:inherit;font-size:inherit;color:inherit;background:none;borde
 .zeile{
   display:grid;grid-template-columns:52px 1fr 62px;align-items:center;
   gap:12px;padding:11px 16px;width:100%;text-align:left;
+  background:var(--karte);position:relative;touch-action:pan-y;
   border-bottom:1px solid var(--linie-zart);
 }
-.zeile:last-child{border-bottom:none}
+.karte > *:last-child.zeile,
+.karte > *:last-child .zeile{border-bottom:none}
 .zeile:active{background:var(--linie-zart)}
+
+/* Wischen zum Loeschen */
+.zeile-wrap{position:relative;overflow:hidden}
+.zeile-papierkorb{position:absolute;top:0;right:0;bottom:0;width:78px;display:flex}
+.papierkorb-knopf{flex:1;background:var(--warn);color:#fff;display:grid;place-items:center;border:none}
 .tag{font-size:13px;color:var(--gedaempft);font-variant-numeric:tabular-nums;line-height:1.25}
 .tag b{display:block;font-family:var(--serif);font-size:18px;font-weight:600;color:var(--tinte)}
 .tag.leer{visibility:hidden}
@@ -213,7 +220,9 @@ button{font-family:inherit;font-size:inherit;color:inherit;background:none;borde
   max-height:92vh;overflow-y:auto;
 }
 .blatt.auf{transform:translateY(0)}
-.griff{width:36px;height:4px;border-radius:2px;background:var(--linie);margin:6px auto 14px}
+.griff-zone{display:block;width:100%;padding:10px 0 14px}
+.griff-zone:active .griff{background:var(--gedaempft)}
+.griff{width:36px;height:4px;border-radius:2px;background:var(--linie);margin:0 auto;display:block}
 .blatt h2{font-family:var(--serif);font-size:21px;font-weight:600;margin:0 0 14px}
 .feldgruppe{background:var(--karte);border-radius:12px;overflow:hidden;margin-bottom:14px}
 .feld{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 14px;border-bottom:1px solid var(--linie-zart)}
@@ -256,8 +265,9 @@ button{font-family:inherit;font-size:inherit;color:inherit;background:none;borde
     <button class="pfeil" id="vor" aria-label="Naechster Monat">&#8250;</button>
   </div>
   <button class="iconknopf" id="einstellungen-auf" aria-label="Einstellungen">
-    <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
-      <circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v2.6M12 18.9v2.6M21.5 12h-2.6M5.1 12H2.5M18.7 5.3l-1.8 1.8M7.1 16.9l-1.8 1.8M18.7 18.7l-1.8-1.8M7.1 7.1L5.3 5.3"/>
+    <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
     </svg>
   </button>
 </header>
@@ -284,7 +294,7 @@ button{font-family:inherit;font-size:inherit;color:inherit;background:none;borde
 
 <!-- Eintrag anlegen oder bearbeiten -->
 <div class="blatt" id="blatt-eintrag" role="dialog" aria-modal="true" aria-labelledby="blatt-titel">
-  <div class="griff"></div>
+  <button type="button" class="griff-zone" id="griff-eintrag" aria-label="Schlie&szlig;en"><span class="griff"></span></button>
   <h2 id="blatt-titel">Zeit nachtragen</h2>
   <div class="feldgruppe">
     <div class="feld">
@@ -320,7 +330,7 @@ button{font-family:inherit;font-size:inherit;color:inherit;background:none;borde
 
 <!-- Einstellungen -->
 <div class="blatt" id="blatt-optionen" role="dialog" aria-modal="true" aria-labelledby="opt-titel">
-  <div class="griff"></div>
+  <button type="button" class="griff-zone" id="griff-optionen" aria-label="Schlie&szlig;en"><span class="griff"></span></button>
   <h2 id="opt-titel">Einstellungen</h2>
   <p class="notiz" style="margin-top:-8px">Die folgenden Werte gelten f&uuml;r <b id="o-jobname">Synera</b>. Jeder Job hat eigene Einstellungen und eine eigene Tabelle.</p>
   <div class="feldgruppe">
@@ -842,14 +852,10 @@ function zeichneKarte(liste) {
     html += p.frei ? freiZeileHtml(p.datum, p.frei, zeigeDatum) : zeileHtml(p.e, von, spanne, zeigeDatum, false);
   });
   html += '<div class="skala"><span>' + hhmm(von) + '</span><span>' + hhmm(von + spanne / 2) + '</span><span>' + hhmm(bis) + '</span></div>';
+  wischOffenerId = null;
   karte.innerHTML = html;
 
-  Array.prototype.forEach.call(karte.querySelectorAll('.zeile[data-id]'), function (el) {
-    el.addEventListener('click', function () {
-      var id = el.getAttribute('data-id');
-      if (id !== '__aktiv') blattEintragOeffnen(id);
-    });
-  });
+  Array.prototype.forEach.call(karte.querySelectorAll('.zeile-wrap'), wischEinrichten);
 }
 
 function tagZelle(iso, zeigeDatum) {
@@ -862,10 +868,20 @@ function freiZeileHtml(iso, name, zeigeDatum) {
     '<span class="frei">' + txt(name) + '</span><span class="netto">frei</span></div>';
 }
 
+var PAPIERKORB_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13M10 11v6M14 11v6"/></svg>';
+
+function zeileWrapHtml(id, inner) {
+  return '<div class="zeile-wrap" data-id="' + id + '">' +
+    '<div class="zeile-papierkorb"><button type="button" class="papierkorb-knopf" data-id="' + id + '" aria-label="Eintrag löschen">' + PAPIERKORB_SVG + '</button></div>' +
+    inner +
+    '</div>';
+}
+
 function zeileHtml(e, von, spanne, zeigeDatum, istOffen) {
   if (e.art === 'urlaub') {
-    return '<button class="zeile freizeile" data-id="' + e.id + '">' + tagZelle(e.date, zeigeDatum) +
+    var urlaubInner = '<button class="zeile freizeile" data-id="' + e.id + '">' + tagZelle(e.date, zeigeDatum) +
       '<span class="frei">Urlaub' + (e.notiz ? ' – ' + txt(e.notiz) : '') + '</span><span class="netto">frei</span></button>';
+    return istOffen ? urlaubInner : zeileWrapHtml(e.id, urlaubInner);
   }
   var d = datumAus(e.date);
   var we = d.getDay() === 0 || d.getDay() === 6;
@@ -878,7 +894,7 @@ function zeileHtml(e, von, spanne, zeigeDatum, istOffen) {
   }).sort(function (p, q) { return p.date < q.date ? 1 : -1; })[0] || null;
   var warnungen = istOffen ? [] : hinweise(e, vorher);
 
-  return '<button class="zeile' + (we || feiertag ? ' wochenende' : '') + '" data-id="' + e.id + '">' +
+  var inner = '<button class="zeile' + (we || feiertag ? ' wochenende' : '') + '" data-id="' + e.id + '">' +
       tagZelle(e.date, zeigeDatum) +
       '<span class="spur">' +
         '<span class="balken' + (istOffen ? ' offen' : '') + '" style="left:' + links.toFixed(2) + '%;width:' + Math.max(1.2, breite).toFixed(2) + '%"></span>' +
@@ -887,13 +903,116 @@ function zeileHtml(e, von, spanne, zeigeDatum, istOffen) {
         (warnungen.length ? '<span class="hinweis-punkt"></span>' : '') +
       '</span>' +
     '</button>';
+  return istOffen ? inner : zeileWrapHtml(e.id, inner);
 }
+
+/* ---------- Wischen zum Loeschen, wie bei Mail: nach links ziehen legt
+   den Papierkorb frei, antippen loescht direkt, kein zweiter Dialog. ---------- */
+var wischOffenerId = null;
+var WISCH_OFFEN = -78;
+
+function wischEinrichten(wrap) {
+  var id = wrap.dataset.id;
+  var zeile = wrap.querySelector('.zeile');
+  var papierkorb = wrap.querySelector('.papierkorb-knopf');
+  var startX = 0, startY = 0, dx = 0, wischtGerade = false, entschieden = false;
+
+  function setzeTransform(x, transition) {
+    zeile.style.transition = transition ? 'transform .18s ease' : 'none';
+    zeile.style.transform = x ? 'translateX(' + x + 'px)' : '';
+  }
+  if (wischOffenerId === id) setzeTransform(WISCH_OFFEN, false);
+
+  zeile.addEventListener('touchstart', function (ev) {
+    if (ev.touches.length !== 1) return;
+    startX = ev.touches[0].clientX; startY = ev.touches[0].clientY;
+    dx = wischOffenerId === id ? WISCH_OFFEN : 0;
+    wischtGerade = false; entschieden = false;
+    setzeTransform(dx, false);
+  }, { passive: true });
+
+  zeile.addEventListener('touchmove', function (ev) {
+    if (ev.touches.length !== 1) return;
+    var x = ev.touches[0].clientX, y = ev.touches[0].clientY;
+    var ddx = x - startX, ddy = y - startY;
+    if (!entschieden) {
+      if (Math.abs(ddx) < 6 && Math.abs(ddy) < 6) return;
+      entschieden = true;
+      wischtGerade = Math.abs(ddx) > Math.abs(ddy);
+      if (!wischtGerade) return;
+    }
+    if (!wischtGerade) return;
+    ev.preventDefault();
+    var basis = wischOffenerId === id ? WISCH_OFFEN : 0;
+    dx = Math.max(WISCH_OFFEN - 24, Math.min(0, basis + ddx));
+    setzeTransform(dx, false);
+  }, { passive: false });
+
+  zeile.addEventListener('touchend', function () {
+    if (!wischtGerade) return;
+    if (dx < WISCH_OFFEN / 2) {
+      if (wischOffenerId && wischOffenerId !== id) wischSchliessen();
+      setzeTransform(WISCH_OFFEN, true);
+      wischOffenerId = id;
+    } else {
+      setzeTransform(0, true);
+      if (wischOffenerId === id) wischOffenerId = null;
+    }
+  });
+
+  zeile.addEventListener('click', function (ev) {
+    // Nach einem echten Wisch feuert der Browser trotzdem noch ein
+    // synthetisches click-Ereignis. Das darf die gerade gesetzte
+    // Offen/Zu-Position nicht sofort wieder umschalten.
+    if (wischtGerade) { wischtGerade = false; return; }
+    // Ist irgendeine Zeile offen (auch eine andere), schliesst der erste
+    // Tipp erst nur den Papierkorb, wie bei Mail, statt sofort zu handeln.
+    if (wischOffenerId) {
+      ev.preventDefault(); ev.stopPropagation();
+      wischSchliessen();
+      return;
+    }
+    if (id !== '__aktiv') blattEintragOeffnen(id);
+  });
+
+  if (papierkorb) {
+    papierkorb.addEventListener('click', function (ev) {
+      ev.stopPropagation();
+      S.eintraege = S.eintraege.filter(function (x) { return x.id !== id; });
+      sichern(); wischOffenerId = null; zeichne(); syncStill();
+    });
+  }
+}
+
+function wischSchliessen() {
+  if (!wischOffenerId) return;
+  var offen = document.querySelector('.zeile-wrap[data-id="' + wischOffenerId + '"] .zeile');
+  if (offen) { offen.style.transition = 'transform .18s ease'; offen.style.transform = ''; }
+  wischOffenerId = null;
+}
+document.addEventListener('click', function (ev) {
+  if (!wischOffenerId) return;
+  if (ev.target.closest && ev.target.closest('.zeile-wrap')) return;
+  wischSchliessen();
+});
 
 /* ---------- Stempeln ---------- */
 function neueId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 function letzterVor(e) {
   return S.eintraege.filter(function (x) { return x.job === e.job && x.id !== e.id && x.date < e.date && x.art !== 'urlaub'; })
     .sort(function (a, b) { return a.date < b.date ? 1 : -1; })[0] || null;
+}
+
+// Prueft, ob sich [s, en) an diesem Tag mit einem bestehenden Arbeitseintrag
+// desselben Jobs ueberschneidet. Ueber-Mitternacht-Eintraege werden auf die
+// Zeitachse des Starttags normiert, das reicht fuer den Regelfall.
+function ueberlapptAn(jobKey, datum, s, en, ausgenommenId) {
+  var enNorm = en < s ? en + MIN_TAG : en;
+  return S.eintraege.some(function (x) {
+    if (x.job !== jobKey || x.date !== datum || x.id === ausgenommenId || x.art === 'urlaub') return false;
+    var xEn = x.endMin < x.startMin ? x.endMin + MIN_TAG : x.endMin;
+    return s < xEn && x.startMin < enNorm;
+  });
 }
 
 document.getElementById('stempel').addEventListener('click', function () {
@@ -940,6 +1059,8 @@ function blattZu() {
   bearbeitetId = null;
 }
 blende.addEventListener('click', blattZu);
+document.getElementById('griff-eintrag').addEventListener('click', blattZu);
+document.getElementById('griff-optionen').addEventListener('click', blattZu);
 
 function setzePausenModus(m) {
   pausenModus = m;
@@ -1098,6 +1219,10 @@ document.getElementById('e-speichern').addEventListener('click', function () {
   if (brutto(s, en) < 1) { alert('Von und Bis d\u00fcrfen nicht gleich sein.'); return; }
   var handPause = Math.max(0, parseInt(document.getElementById('f-pause').value || '0', 10));
   if (pausenModus === 'hand' && handPause >= brutto(s, en)) { alert('Die Pause ist l\u00e4nger als die Anwesenheit.'); return; }
+  if (ueberlapptAn(S.aktuell, datum, s, en, bearbeitetId)) {
+    alert('F\u00fcr diese Zeit gibt es an diesem Tag schon einen Eintrag. \u00c4ndere die Zeit oder bearbeite den bestehenden Eintrag.');
+    return;
+  }
 
   var felder = {
     date: datum, art: 'arbeit', startMin: s, endMin: en,
